@@ -49,8 +49,8 @@ export default {
   right: 0;
   height: 60px;
   display: flex;
-  background-color: white;
-  border-top: 1px solid #eee;
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border);
   z-index: 100;
 }
 
@@ -60,11 +60,11 @@ export default {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .tab-item.active {
-  color: #42b983;
+  color: var(--accent-light);
 }
 
 .tab-icon {
