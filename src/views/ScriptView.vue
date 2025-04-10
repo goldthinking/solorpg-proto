@@ -14,7 +14,7 @@
     </div>
     
     <div class="script-list">
-      <div class="script-item" v-for="(script, index) in scripts" :key="index">
+      <div class="script-item" v-for="(script, index) in scripts" :key="index" @click="goToScriptDetail()">
         <img :src="script.cover" class="script-cover" />
         <div class="script-info">
           <div class="title-row">
@@ -130,6 +130,11 @@ export default {
           description: '一个偏远村庄的温情故事，回忆那些被遗忘的时光...'
         }
       ]
+    }
+  },
+  methods: {
+    goToScriptDetail() {
+      this.$router.push('/script-detail')
     }
   }
 }
@@ -289,9 +294,9 @@ export default {
 .tag {
   padding: 2px 8px;
   background-color: transparent;
-  border: 1px solid #888;
+  border: 1px solid var(--text-dark);
   border-radius: 999px;
   font-size: 12px;
-  color: #ccc;
+  color: var(--text-dark);
 }
 </style>
