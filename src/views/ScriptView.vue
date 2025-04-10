@@ -169,19 +169,47 @@ export default {
 
 .button-row button {
   flex: 0 0 48%;
-  padding: 10px;
+  padding: 12px 12px 12px 40px;
   border: none;
-  border-radius: 4px;
+  border-radius: 12px;
   color: white;
   cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 16px;
+  position: relative;
 }
 
 .rank-button {
-  background-color: var(--accent-dark);
+  background: linear-gradient(135deg, #d6a65f, #9e7211);
+}
+
+.rank-button::before {
+  content: '🏆';
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 24px;
 }
 
 .category-button {
-  background-color: var(--accent-light);
+  background: linear-gradient(135deg, #8262ec, #521ca8);
+}
+
+.category-button::before {
+  content: '🏷️';
+  position: absolute;
+  left: 18px;
+  font-size: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.button-row button:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .script-list {
@@ -224,6 +252,7 @@ export default {
   font-size: 14px;
   margin: 5px 0;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
