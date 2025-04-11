@@ -42,6 +42,38 @@
         </div>
       </div>
     </div>
+    <!-- 游戏记录 -->
+    <div class="section">
+      <div class="section-header">
+        <h3>游戏记录</h3>
+        <span class="view-all">查看全部 ></span>
+      </div>
+      <div class="game-records">
+        <div
+          class="record-item"
+          v-for="(record, index) in gameRecords"
+          :key="index"
+        >
+          <div class="record-info">
+            <h4>{{ record.scriptName }}</h4>
+            <div class="record-meta">
+              <span class="record-character">饰演: {{ record.character }}</span>
+              <span class="record-date">{{ record.date }}</span>
+            </div>
+          </div>
+          <div
+            class="record-status"
+            :class="record.completed ? 'completed' : 'incomplete'"
+          >
+            {{ record.completed ? "已完成" : "未完成" }}
+          </div>
+        </div>
+        <div class="empty-placeholder" v-if="gameRecords.length === 0">
+          <p>暂无游戏记录</p>
+          <button class="explore-button">开始游戏</button>
+        </div>
+      </div>
+    </div>
     <!-- 其他部分将在后续添加 -->
   </div>
   <TabBar />
@@ -72,6 +104,20 @@ export default {
           cover: "",
           difficulty: "hard",
           tags: ["烧脑"],
+        },
+      ],
+      gameRecords: [
+        {
+          scriptName: "血色山庄",
+          character: "林医生",
+          date: "2023-06-15",
+          completed: true,
+        },
+        {
+          scriptName: "时光邮局",
+          character: "邮差",
+          date: "2023-05-28",
+          completed: false,
         },
       ],
     };
@@ -236,5 +282,47 @@ export default {
   border-radius: 20px;
   font-size: 14px;
   cursor: pointer;
+}
+.game-records {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.record-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background-color: var(--bg-primary);
+  border-radius: 8px;
+}
+
+.record-info h4 {
+  margin: 0 0 5px 0;
+  font-size: 15px;
+}
+
+.record-meta {
+  display: flex;
+  gap: 15px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.record-status {
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.record-status.completed {
+  background-color: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+}
+
+.record-status.incomplete {
+  background-color: rgba(255, 152, 0, 0.2);
+  color: #ff9800;
 }
 </style>
