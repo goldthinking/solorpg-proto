@@ -74,6 +74,35 @@
         </div>
       </div>
     </div>
+    <!-- 个人设置 -->
+    <div class="section">
+      <h3 class="section-title">个人设置</h3>
+      <div class="settings-list">
+        <div
+          class="setting-item"
+          v-for="(setting, index) in settings"
+          :key="index"
+        >
+          <div class="setting-icon">{{ setting.icon }}</div>
+          <div class="setting-name">{{ setting.name }}</div>
+          <div class="setting-arrow">›</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 帮助中心 -->
+    <div class="section">
+      <h3 class="section-title">帮助中心</h3>
+      <div class="help-list">
+        <div class="help-item" v-for="(item, index) in helpItems" :key="index">
+          <div class="help-icon">{{ item.icon }}</div>
+          <div class="help-name">{{ item.name }}</div>
+          <div class="help-arrow">›</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-version">版本号: v0.1.0</div>
     <!-- 其他部分将在后续添加 -->
   </div>
   <TabBar />
@@ -119,6 +148,17 @@ export default {
           date: "2023-05-28",
           completed: false,
         },
+      ],
+      settings: [
+        { name: "账号安全", icon: "🔒" },
+        { name: "通知设置", icon: "🔔" },
+        { name: "隐私设置", icon: "👁️" },
+        { name: "主题切换", icon: "🎨" },
+      ],
+      helpItems: [
+        { name: "常见问题", icon: "❓" },
+        { name: "意见反馈", icon: "📝" },
+        { name: "关于我们", icon: "ℹ️" },
       ],
     };
   },
@@ -324,5 +364,58 @@ export default {
 .record-status.incomplete {
   background-color: rgba(255, 152, 0, 0.2);
   color: #ff9800;
+}
+
+.section-title {
+  margin: 0 0 15px 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.settings-list,
+.help-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.setting-item,
+.help-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.setting-item:last-child,
+.help-item:last-child {
+  border-bottom: none;
+}
+
+.setting-icon,
+.help-icon {
+  width: 30px;
+  text-align: center;
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+.setting-name,
+.help-name {
+  flex: 1;
+  font-size: 15px;
+}
+
+.setting-arrow,
+.help-arrow {
+  color: var(--text-secondary);
+  font-size: 20px;
+}
+
+.app-version {
+  text-align: center;
+  margin-top: 30px;
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 </style>
