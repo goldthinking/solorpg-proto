@@ -28,6 +28,55 @@
         </div>
       </div>
 
+      <!-- 音效设置 -->
+      <div class="preference-section">
+        <h2 class="section-title">音效设置</h2>
+
+        <div class="preference-item">
+          <div class="preference-info">
+            <div class="preference-name">背景音乐</div>
+            <div class="preference-description">游戏背景音乐音量</div>
+          </div>
+          <div class="preference-control">
+            <div class="slider-container">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                v-model="preferences.bgmVolume"
+                class="slider"
+              />
+              <div class="slider-labels">
+                <span>0%</span>
+                <span>100%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="preference-item">
+          <div class="preference-info">
+            <div class="preference-name">音效</div>
+            <div class="preference-description">游戏音效音量</div>
+          </div>
+          <div class="preference-control">
+            <div class="slider-container">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                v-model="preferences.sfxVolume"
+                class="slider"
+              />
+              <div class="slider-labels">
+                <span>0%</span>
+                <span>100%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="reset-container">
         <button class="reset-button" @click="resetPreferences">
           恢复默认设置
@@ -46,6 +95,10 @@ export default {
         // 界面设置
         textSize: "medium",
         dialogStyle: "classic",
+
+        // 音效设置
+        bgmVolume: 70,
+        sfxVolume: 80,
       },
     };
   },
@@ -64,6 +117,8 @@ export default {
       this.preferences = {
         textSize: "medium",
         dialogStyle: "classic",
+        bgmVolume: 70,
+        sfxVolume: 80,
       };
       this.savePreferences();
     },
@@ -170,6 +225,39 @@ export default {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-size: 14px;
+}
+
+.slider-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  outline: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  cursor: pointer;
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 5px;
 }
 
 .reset-container {
