@@ -11,7 +11,7 @@
       <!-- 界面设置 -->
       <div class="preference-section">
         <h2 class="section-title">界面设置</h2>
-
+        
         <div class="preference-item">
           <div class="preference-info">
             <div class="preference-name">文字大小</div>
@@ -26,12 +26,26 @@
             </select>
           </div>
         </div>
+        
+        <div class="preference-item">
+          <div class="preference-info">
+            <div class="preference-name">对话框样式</div>
+            <div class="preference-description">选择对话框的显示风格</div>
+          </div>
+          <div class="preference-control">
+            <select v-model="preferences.dialogStyle" class="select-control">
+              <option value="classic">经典</option>
+              <option value="modern">现代</option>
+              <option value="minimal">简约</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <!-- 音效设置 -->
       <div class="preference-section">
         <h2 class="section-title">音效设置</h2>
-
+        
         <div class="preference-item">
           <div class="preference-info">
             <div class="preference-name">背景音乐</div>
@@ -39,11 +53,11 @@
           </div>
           <div class="preference-control">
             <div class="slider-container">
-              <input
-                type="range"
-                min="0"
-                max="100"
-                v-model="preferences.bgmVolume"
+              <input 
+                type="range" 
+                min="0" 
+                max="100" 
+                v-model="preferences.bgmVolume" 
                 class="slider"
               />
               <div class="slider-labels">
@@ -53,7 +67,7 @@
             </div>
           </div>
         </div>
-
+        
         <div class="preference-item">
           <div class="preference-info">
             <div class="preference-name">音效</div>
@@ -61,11 +75,11 @@
           </div>
           <div class="preference-control">
             <div class="slider-container">
-              <input
-                type="range"
-                min="0"
-                max="100"
-                v-model="preferences.sfxVolume"
+              <input 
+                type="range" 
+                min="0" 
+                max="100" 
+                v-model="preferences.sfxVolume" 
                 class="slider"
               />
               <div class="slider-labels">
@@ -77,10 +91,26 @@
         </div>
       </div>
 
+      <!-- 游戏体验（待完善） -->
+      <div class="preference-section">
+        <h2 class="section-title">游戏体验</h2>
+        <div class="coming-soon">
+          <div class="coming-soon-icon">🚧</div>
+          <div class="coming-soon-text">功能开发中，敬请期待</div>
+        </div>
+      </div>
+
+      <!-- 辅助功能（待完善） -->
+      <div class="preference-section">
+        <h2 class="section-title">辅助功能</h2>
+        <div class="coming-soon">
+          <div class="coming-soon-icon">🚧</div>
+          <div class="coming-soon-text">功能开发中，敬请期待</div>
+        </div>
+      </div>
+      
       <div class="reset-container">
-        <button class="reset-button" @click="resetPreferences">
-          恢复默认设置
-        </button>
+        <button class="reset-button" @click="resetPreferences">恢复默认设置</button>
       </div>
     </div>
   </div>
@@ -95,16 +125,16 @@ export default {
         // 界面设置
         textSize: "medium",
         dialogStyle: "classic",
-
+        
         // 音效设置
         bgmVolume: 70,
-        sfxVolume: 80,
-      },
+        sfxVolume: 80
+      }
     };
   },
   created() {
     // 从本地存储加载设置
-    const savedPreferences = localStorage.getItem("gamePreferences");
+    const savedPreferences = localStorage.getItem('gamePreferences');
     if (savedPreferences) {
       this.preferences = JSON.parse(savedPreferences);
     }
@@ -118,22 +148,22 @@ export default {
         textSize: "medium",
         dialogStyle: "classic",
         bgmVolume: 70,
-        sfxVolume: 80,
+        sfxVolume: 80
       };
       this.savePreferences();
     },
     savePreferences() {
-      localStorage.setItem("gamePreferences", JSON.stringify(this.preferences));
-    },
+      localStorage.setItem('gamePreferences', JSON.stringify(this.preferences));
+    }
   },
   watch: {
     preferences: {
       handler() {
         this.savePreferences();
       },
-      deep: true,
-    },
-  },
+      deep: true
+    }
+  }
 };
 </script>
 
@@ -258,6 +288,24 @@ export default {
   font-size: 12px;
   color: var(--text-secondary);
   margin-top: 5px;
+}
+
+.coming-soon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+  color: var(--text-secondary);
+}
+
+.coming-soon-icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.coming-soon-text {
+  font-size: 14px;
 }
 
 .reset-container {
