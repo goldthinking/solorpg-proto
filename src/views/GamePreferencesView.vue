@@ -2,7 +2,11 @@
   <div class="game-preferences">
     <div class="header">
       <div class="back-button" @click="goBack">
-        <span class="back-icon">←</span>
+        <svg class="back-icon" viewBox="0 0 24 24">
+          <path
+            d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+          />
+        </svg>
       </div>
       <h1>游戏偏好</h1>
     </div>
@@ -11,7 +15,7 @@
       <!-- 界面设置 -->
       <div class="preference-section">
         <h2 class="section-title">界面设置</h2>
-        
+
         <div class="preference-item">
           <div class="preference-info">
             <div class="preference-name">文字大小</div>
@@ -26,7 +30,7 @@
             </select>
           </div>
         </div>
-        
+
         <div class="preference-item">
           <div class="preference-info">
             <div class="preference-name">对话框样式</div>
@@ -45,7 +49,7 @@
       <!-- 音效设置 -->
       <div class="preference-section">
         <h2 class="section-title">音效设置</h2>
-        
+
         <div class="preference-item">
           <div class="preference-info">
             <div class="preference-name">背景音乐</div>
@@ -53,11 +57,11 @@
           </div>
           <div class="preference-control">
             <div class="slider-container">
-              <input 
-                type="range" 
-                min="0" 
-                max="100" 
-                v-model="preferences.bgmVolume" 
+              <input
+                type="range"
+                min="0"
+                max="100"
+                v-model="preferences.bgmVolume"
                 class="slider"
               />
               <div class="slider-labels">
@@ -67,7 +71,7 @@
             </div>
           </div>
         </div>
-        
+
         <div class="preference-item">
           <div class="preference-info">
             <div class="preference-name">音效</div>
@@ -75,11 +79,11 @@
           </div>
           <div class="preference-control">
             <div class="slider-container">
-              <input 
-                type="range" 
-                min="0" 
-                max="100" 
-                v-model="preferences.sfxVolume" 
+              <input
+                type="range"
+                min="0"
+                max="100"
+                v-model="preferences.sfxVolume"
                 class="slider"
               />
               <div class="slider-labels">
@@ -108,9 +112,11 @@
           <div class="coming-soon-text">功能开发中，敬请期待</div>
         </div>
       </div>
-      
+
       <div class="reset-container">
-        <button class="reset-button" @click="resetPreferences">恢复默认设置</button>
+        <button class="reset-button" @click="resetPreferences">
+          恢复默认设置
+        </button>
       </div>
     </div>
   </div>
@@ -125,45 +131,47 @@ export default {
         // 界面设置
         textSize: "medium",
         dialogStyle: "classic",
-        
+
         // 音效设置
         bgmVolume: 70,
-        sfxVolume: 80
-      }
+        sfxVolume: 80,
+      },
     };
   },
   created() {
     // 从本地存储加载设置
-    const savedPreferences = localStorage.getItem('gamePreferences');
+    const savedPreferences = localStorage.getItem("gamePreferences");
     if (savedPreferences) {
       this.preferences = JSON.parse(savedPreferences);
     }
   },
   methods: {
     goBack() {
-      this.$router.go(-1);
+      //   this.$router.go(-1);
+      // 直接导航到profile路由
+      this.$router.push("/profile");
     },
     resetPreferences() {
       this.preferences = {
         textSize: "medium",
         dialogStyle: "classic",
         bgmVolume: 70,
-        sfxVolume: 80
+        sfxVolume: 80,
       };
       this.savePreferences();
     },
     savePreferences() {
-      localStorage.setItem('gamePreferences', JSON.stringify(this.preferences));
-    }
+      localStorage.setItem("gamePreferences", JSON.stringify(this.preferences));
+    },
   },
   watch: {
     preferences: {
       handler() {
         this.savePreferences();
       },
-      deep: true
-    }
-  }
+      deep: true,
+    },
+  },
 };
 </script>
 
@@ -182,12 +190,25 @@ export default {
 }
 
 .back-button {
-  margin-right: 15px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
   cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.back-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .back-icon {
-  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  fill: var(--accent-light);
 }
 
 .header h1 {
