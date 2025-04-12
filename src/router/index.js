@@ -44,6 +44,11 @@ const router = createRouter({
       name: 'game-reveal-stage',
       component: () => import('../views/GameRevealStageView.vue'),
     },
+    {
+      path: '/game-preferences',
+      name: 'GamePreferences',
+      component: () => import('../views/GamePreferencesView.vue')
+    },
   ],
 })
 
