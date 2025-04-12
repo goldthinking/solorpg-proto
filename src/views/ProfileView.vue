@@ -82,6 +82,7 @@
           class="setting-item"
           v-for="(setting, index) in settings"
           :key="index"
+          @click="navigateToSetting(setting)"
         >
           <div class="setting-icon">{{ setting.icon }}</div>
           <div class="setting-name">{{ setting.name }}</div>
@@ -152,8 +153,7 @@ export default {
       settings: [
         { name: "账号安全", icon: "🔒" },
         { name: "通知设置", icon: "🔔" },
-        { name: "隐私设置", icon: "👁️" },
-        { name: "主题切换", icon: "🎨" },
+        { name: "游戏偏好", icon: "🎮", route: "/game-preferences" },
       ],
       helpItems: [
         { name: "常见问题", icon: "❓" },
@@ -171,6 +171,14 @@ export default {
         expert: "专家",
       };
       return map[level] || "未知";
+    },
+    navigateToSetting(setting) {
+      if (setting.route) {
+        this.$router.push(setting.route);
+      } else {
+        // 暂时只处理有route属性的设置项
+        console.log(`点击了设置: ${setting.name}`);
+      }
     },
   },
 };
