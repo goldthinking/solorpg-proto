@@ -1,10 +1,22 @@
 <template>
   <div class="game-reasoning-stage-view">
     <h1>游戏-推理阶段</h1>
+    
+    <!-- 提示灯泡 -->
+    <div class="hint-button" @click="showHint">
+      <i class="fas fa-lightbulb"></i>
+      <div class="hint-popup" v-show="showHintPopup">
+        <div class="hint-content">
+          <h3>提示</h3>
+          <p>{{ currentHint }}</p>
+          <button @click="closeHint">关闭</button>
+        </div>
+      </div>
+    </div>
+
     <div class="dialogue-section">
       <!-- 对话框 -->
       <div class="chat-box">
-        <!-- 显示对话历史 -->
         <div v-for="(message, index) in chatHistory" :key="index" class="chat-message" :class="message.type">
           <p v-html="message.content"></p>
         </div>
@@ -40,20 +52,30 @@ export default {
   data() {
     return {
       questions: [
-        "你觉得角色A为什么会做出这样的决定？",
-        "角色B的行为是否符合他的性格？",
-        "你能预测接下来的剧情发展吗？"
+        "作为警方调查员，你认为这个雪夜里谁最有可能进入死者的房间？为什么？",
+        "李小姐声称整晚都在房间，但王管家说看见她在走廊徘徊。请分析两人的证词，并说明谁更可信。",
+        "林医生发现死者遗体上有一些特殊痕迹，你觉得这些痕迹说明了什么？"
       ],
       currentQuestionIndex: 0,
       playerAnswer: '',
       chatHistory: [],
+      showHintPopup: false,
+      isChapterComplete: false,
+      answerAttempts: 0, // 记录当前问题的回答次数
       clues: [],
-      isChapterComplete: false
+      hints: [
+        "【答题要点】\n1. 分析雪地上的足迹情况\n2. 考虑各个嫌疑人的行动轨迹\n3. 提到雪夜和进出房间的时间线",
+        "【答题要点】\n1. 分析李小姐和王管家的动机\n2. 结合两人的性格特点\n3. 提供支持你判断的具体理由",
+        "【答题要点】\n1. 根据林医生的描述分析痕迹特征\n2. 推测可能的致伤工具\n3. 联系案发现场的其他线索"
+      ]
     };
   },
   computed: {
     currentQuestion() {
       return this.questions[this.currentQuestionIndex] || null;
+    },
+    currentHint() {
+      return this.hints[this.currentQuestionIndex] || "暂无提示";
     }
   },
   mounted() {
@@ -61,6 +83,10 @@ export default {
     this.chatHistory.push({ type: 'ai', content: this.currentQuestion });
   },
   methods: {
+    closeHint() {
+      this.showHintPopup = false;
+    },
+    
     async submitAnswer() {
       if (!this.playerAnswer.trim()) {
         alert("回答不能为空！");
@@ -72,8 +98,6 @@ export default {
 
       // 获取 AI 反馈
       const feedback = await this.getAiFeedback(this.playerAnswer);
-
-      // 添加 AI 反馈到对话历史
       this.chatHistory.push({ type: 'ai', content: feedback.comment });
 
       // 提取线索并加入线索库
@@ -85,65 +109,158 @@ export default {
         });
       }
 
-      // 准备下一个问题
-      if (this.currentQuestionIndex < this.questions.length - 1) {
-        this.currentQuestionIndex++;
-        this.chatHistory.push({ type: 'ai', content: this.currentQuestion });
-        this.playerAnswer = '';
+      // 根据评分决定是否进入下一题
+      if (feedback.score >= 70 || this.answerAttempts >= 2) {
+        if (this.currentQuestionIndex < this.questions.length - 1) {
+          this.currentQuestionIndex++;
+          this.answerAttempts = 0;
+          this.chatHistory.push({ type: 'ai', content: this.questions[this.currentQuestionIndex] });
+        } else {
+          this.isChapterComplete = true;
+          this.chatHistory.push({ type: 'ai', content: "恭喜你完成了推理阶段！让我们继续下一步。" });
+        }
       } else {
-        this.chatHistory.push({ type: 'ai', content: "推理阶段完成！可以进入搜查阶段了。" });
-        this.isChapterComplete = true; // 显示下一阶段按钮
-        this.playerAnswer = '';
+        this.answerAttempts++;
+        this.chatHistory.push({ 
+          type: 'ai', 
+          content: "让我们再深入思考一下。你可以考虑：" + this.hints[this.currentQuestionIndex] 
+        });
       }
+      
+      this.playerAnswer = '';
     },
 
     getAiFeedback(answer) {
       return new Promise((resolve) => {
         setTimeout(() => {
-          const clues = this.extractClues(answer);
-          const score = Math.floor(Math.random() * 100);
+          const score = this.evaluateAnswer(answer);
+          let feedback = this.generateFeedback(score, answer);
           
-          let analysis = "";
-          if (score >= 80) {
-            analysis = "你的推理非常准确，抓住了关键点。";
-          } else if (score >= 60) {
-            analysis = "推理基本合理，但还可以更深入。";
-          } else {
-            analysis = "推理方向需要调整，建议重新思考。";
-          }
-
           resolve({
             score: score,
-            comment: `
-              <div class="feedback">
-                <p>评分：<strong>${score}</strong></p>
-                <p>${analysis}</p>
-                <p>发现的线索：<strong>${clues.join('、')}</strong></p>
-              </div>
-            `,
-            clues: clues
+            comment: feedback
           });
         }, 1000);
       });
     },
 
-    extractClues(answer) {
-      const keywords = ['角色A', '角色B', '动机', '行为', '剧情'];
-      return keywords.filter((keyword) => answer.includes(keyword));
+    evaluateAnswer(answer) {
+      const scorePoints = {
+        question0: ['足迹', '雪地', '时间', '行动'],
+        question1: ['动机', '性格', '证词', '关系'],
+        question2: ['痕迹', '工具', '现场', '证据']
+      };
+      
+      const currentKeywords = scorePoints[`question${this.currentQuestionIndex}`];
+      const foundKeywords = currentKeywords.filter(keyword => answer.includes(keyword));
+      
+      // 需要至少包含3个关键词才能通过
+      return Math.min(foundKeywords.length * 25, 100);
+    },
+
+    generateFeedback(score, answer) {
+      const keywords = this.extractKeywords(answer);
+      let feedback = '<div class="feedback">';
+      
+      if (score >= 75) {
+        feedback += `<p>分析很到位！你提到了<strong>${keywords.join('</strong>、<strong>')}</strong>这些重要线索。</p>
+                    <p class="score-hint">✓ 已达到进入下一题的要求</p>`;
+      } else {
+        feedback += `<p>推理中提到了<strong>${keywords.join('</strong>、<strong>')}</strong>，但还需要：</p>
+                    <p class="score-hint">✗ 至少需要提到3个关键要素才能进入下一题：${this.hints[this.currentQuestionIndex]}</p>`;
+      }
+
+      return feedback + '</div>';
+    },
+
+    extractKeywords(answer) {
+      const keywords = ['动机', '性格', '行为', '关系', '证据'];
+      return keywords.filter(keyword => answer.includes(keyword));
     },
 
     goToSearchStage() {
       this.$router.push('/game-search-stage');
+    },
+    showHint() {
+      this.showHintPopup = !this.showHintPopup;
     }
   }
 };
 </script>
 
 <style scoped>
+/* 修改背景色为统一风格 */
 .game-reasoning-stage-view {
   padding: 20px;
-  background-color: #f5f5f5;
+  background-color: var(--bg-secondary);
   min-height: 100vh;
+  position: relative;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* 添加提示灯泡样式 */
+.hint-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  cursor: pointer;
+  z-index: 100;
+}
+
+.hint-button i {
+  font-size: 24px;
+  color: #ffd700;
+  text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+  transition: all 0.3s ease;
+}
+
+.hint-button:hover i {
+  color: #ffed4a;
+  transform: scale(1.1);
+}
+
+.hint-popup {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  width: 250px;
+  z-index: 101;
+}
+
+.hint-content {
+  text-align: left;
+}
+
+.hint-content h3 {
+  margin-top: 0;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.hint-content p {
+  margin: 10px 0;
+  color: #666;
+  line-height: 1.5;
+}
+
+.hint-content button {
+  background-color: #ddd;
+  color: #333;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+.hint-content button:hover {
+  background-color: #ccc;
 }
 
 .dialogue-section {
@@ -270,8 +387,26 @@ button:hover {
 
 .feedback {
   background-color: #f8f9fa;
-  padding: 10px;
-  border-radius: 4px;
+  padding: 15px;
+  border-radius: 8px;
   margin-top: 5px;
+  line-height: 1.5;
+}
+
+.feedback strong {
+  color: #007bff;
+  font-weight: 600;
+}
+
+.score-hint {
+  margin-top: 10px;
+  padding: 8px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  color: #666;
+}
+
+.score-hint strong {
+  color: #28a745;
 }
 </style>
