@@ -43,12 +43,15 @@
         进入搜查阶段
       </button>
     </div>
+    <ToolBar />
   </div>
 </template>
 
 <script>
+import ToolBar from "@/components/ToobBar.vue";
 export default {
   name: 'GameReasoningStageView',
+  components: {ToolBar},
   data() {
     return {
       questions: [
