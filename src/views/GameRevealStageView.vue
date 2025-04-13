@@ -17,5 +17,6 @@ export default {
 <style scoped>
 .game-reveal-stage-view {
   padding: 20px;
+  padding-top: calc(20px + var(--stage-header-height));
 }
 </style>

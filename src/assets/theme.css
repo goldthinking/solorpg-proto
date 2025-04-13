@@ -1,6 +1,6 @@
 :root {
   --bg-primary: #2d293a;
-  --bg-secondary: #3e3853;
+  --bg-secondary: #4a465b;
   --text-primary: #eee;
   --text-light: #fff;
   --text-dark: #bfbcd7;
@@ -10,6 +10,8 @@
   --warning: #ffb300;
   --success: #43a047;
   --border: #555555;
+
+  --stage-header-height: 50px;
 }
 
 body {

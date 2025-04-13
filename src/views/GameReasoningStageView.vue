@@ -201,6 +201,7 @@ export default {
 /* 修改背景色为统一风格 */
 .game-reasoning-stage-view {
   padding: 20px;
+  padding-top: calc(20px + var(--stage-header-height));
   background-color: var(--bg-secondary);
   min-height: 100vh;
   position: relative;

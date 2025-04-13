@@ -25,5 +25,6 @@ export default {
 <style scoped>
 .game-search-stage-view {
   padding: 20px;
+  padding-top: calc(20px + var(--stage-header-height));
 }
 </style>

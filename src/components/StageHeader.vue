@@ -18,12 +18,18 @@ export default {
 
 <style scoped>
 .stage-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: var(--stage-header-height);
+  display: flex;
+  justify-content: center;
+  align-items: center;
   background-color: var(--bg-secondary);
-  padding: 12px 16px;
+  padding: 10px 0;
   text-align: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: sticky;
-  top: 0;
   z-index: 100;
 }
 
@@ -31,6 +37,5 @@ export default {
   font-size: 18px;
   color: var(--text-primary);
   margin: 0;
-  padding: 8px 0;
 }
 </style>
