@@ -45,6 +45,7 @@
       </button>
     </div>
     <ToolBar :items="allTools" />
+    <button class="next-stage-btn" @click="goToRevealStage">推理完成，开始揭秘</button>
   </div>
 </template>
 
@@ -53,6 +54,11 @@ import ToolBar from "@/components/ToolBar.vue";
 import StageHeader from "@/components/StageHeader.vue";
 export default {
   name: 'GameReasoningStageView',
+  methods: {
+    goToRevealStage() {
+      this.$router.push({ name: 'game-reveal-stage' });
+    }
+  },
   components: {
     ToolBar,
     StageHeader
@@ -378,21 +384,18 @@ button:hover {
 }
 
 .next-stage-btn {
-  background-color: #28a745;
-  color: white;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   padding: 12px 24px;
+  background-color: var(--accent-dark);
+  color: var(--text-light);
   border: none;
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 16px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.next-stage-btn:hover {
-  background-color: #218838;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .feedback {

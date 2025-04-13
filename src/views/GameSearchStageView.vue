@@ -3,6 +3,36 @@
     <ToolBar :toolTypes="toolTypes" />
     <StageHeader stageName="搜查阶段" />
     <div class="map-container" ref="mapContainer">
+      <div class="avatar-list">
+        <div 
+          class="avatar-item" 
+          v-for="(character, index) in characters" 
+          :key="index"
+          @click="showCharacterDialog(character)"
+        >
+          <div class="avatar-container">
+            <img :src="character.avatar" class="avatar-image" />
+            <div class="badge-count" :class="{ hidden: character.unreadCount === 0 }">
+              {{ character.unreadCount }}
+            </div>
+          </div>
+          <div class="character-name">{{ character.name }}</div>
+        </div>
+      </div>
+      
+      <div class="character-dialog" v-if="showDialog">
+        <div class="dialog-content">
+          <img :src="currentCharacter.avatar" class="dialog-avatar" />
+          <div class="dialog-name">{{ currentCharacter.name }}</div>
+          <div class="dialog-message">
+            <p>你可以向 {{ currentCharacter.name }} 提问</p>
+            <p>TA的回答中可能会有不真实的信息，但是<b>加粗</b>的内容一定是正确的</p>
+          </div>
+          <textarea class="dialog-input" placeholder="输入你的问题..."></textarea>
+          <button class="dialog-confirm" @click="closeDialog">确认</button>
+          <button class="dialog-close" @click="closeDialog">X</button>
+        </div>
+      </div>
       <img 
         src="@/assets/map_test.png" 
         class="map-image" 
@@ -20,6 +50,7 @@
         </svg>
       </div>
     </div>
+    <button class="next-stage-btn" @click="goToReasoningStage">搜证完成，开始推理</button>
   </div>
 </template>
 
@@ -28,6 +59,11 @@ import ToolBar from "@/components/ToolBar.vue";
 import StageHeader from "@/components/StageHeader.vue";
 export default {
   name: 'GameSearchStageView',
+  methods: {
+    goToReasoningStage() {
+      this.$router.push({ name: 'game-reasoning-stage' });
+    }
+  },
   components: {
     ToolBar,
     StageHeader
@@ -39,7 +75,14 @@ export default {
       startPos: { x: 0, y: 0 },
       currentPos: { x: 0, y: 0 },
       showLeftEdge: false,
-      showRightEdge: false
+      showRightEdge: false,
+      characters: [
+        { name: '李小姐', avatar: "", unreadCount: 3 },
+        { name: '王管家', avatar: "", unreadCount: 0 },
+        { name: '林医生', avatar: "", unreadCount: 1 }
+      ],
+      showDialog: false,
+      currentCharacter: null
     }
   },
   mounted() {
@@ -110,12 +153,41 @@ export default {
     },
     endDrag() {
       this.isDragging = false
+    },
+    showCharacterDialog(character) {
+      this.currentCharacter = character
+      this.showDialog = true
+    },
+    closeDialog() {
+      this.showDialog = false
     }
   }
 }
 </script>
 
 <style scoped>
+.avatar-container {
+  position: relative;
+}
+
+.badge-count {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 20px;
+  height: 20px;
+  background: var(--accent-dark);
+  color: var(--text-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.badge-count.hidden {
+  display: none;
+}
 .game-search-stage-view {
   display: flex;
   flex-direction: column;
@@ -162,5 +234,128 @@ export default {
 
 .edge-indicator.right {
   right: 10px;
+}
+
+.avatar-list {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.avatar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.avatar-image {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.character-name {
+  margin-top: 5px;
+  font-size: 12px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.character-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.dialog-content {
+  background-color: var(--bg-secondary);
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 80%;
+  text-align: center;
+  color: var(--text-primary);
+  position: relative;
+}
+
+.dialog-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin: 0 auto 15px;
+  object-fit: cover;
+}
+
+.dialog-name {
+  font-size: 18px;
+  margin-bottom: 15px;
+}
+
+.dialog-message {
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.dialog-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--text-light);
+  cursor: pointer;
+}
+
+.dialog-input {
+  width: 100%;
+  min-height: 100px;
+  padding: 10px;
+  margin: 15px 0;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  resize: vertical;
+}
+
+.dialog-confirm {
+  padding: 10px 20px;
+  margin-top: 10px;
+  background-color: var(--accent-dark);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.next-stage-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  background-color: var(--accent-dark);
+  color: var(--text-light);
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 </style>
