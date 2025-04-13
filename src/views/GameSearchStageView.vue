@@ -1,16 +1,18 @@
 <template>
   <div class="game-search-stage-view">
     <ToolBar :toolTypes="toolTypes" />
-    <h1>游戏-搜查阶段</h1>
+    <StageHeader stageName="搜查阶段" />
   </div>
 </template>
 
 <script>
 import ToolBar from "@/components/ToolBar.vue";
+import StageHeader from "@/components/StageHeader.vue";
 export default {
   name: 'GameSearchStageView',
   components: {
-    ToolBar
+    ToolBar,
+    StageHeader
   },
   data() {
     return {

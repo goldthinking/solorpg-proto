@@ -1,6 +1,7 @@
 <template>
   <div class="game-reasoning-stage-view">
-    <h1>游戏-推理阶段</h1>
+    <ToolBar :toolTypes="toolTypes" />
+    <StageHeader stageName="推理阶段" />
     
     <!-- 提示灯泡 -->
     <div class="hint-button" @click="showHint">
@@ -49,10 +50,12 @@
 
 <script>
 import ToolBar from "@/components/ToolBar.vue";
+import StageHeader from "@/components/StageHeader.vue";
 export default {
   name: 'GameReasoningStageView',
   components: {
-    ToolBar
+    ToolBar,
+    StageHeader
   },
   data() {
     return {

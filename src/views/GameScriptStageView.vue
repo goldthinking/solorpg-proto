@@ -1,9 +1,7 @@
 <template>
   <div class="game-script-stage-view">
     <ToolBar :items="allTools" />
-    <div class="script-header">
-      <h1>{{ chapterTitle }}</h1>
-    </div>
+    <StageHeader :stageName="chapterTitle" />
     <div class="script-content">
       <p v-for="(paragraph, index) in scriptContent" :key="index">{{ paragraph }}</p>
     </div>
@@ -12,10 +10,12 @@
 
 <script>
 import ToolBar from "@/components/ToolBar.vue";
+import StageHeader from "@/components/StageHeader.vue";
 export default {
   name: 'GameScriptStageView',
   components: {
-    ToolBar
+    ToolBar,
+    StageHeader
   },
   data() {
     return {
