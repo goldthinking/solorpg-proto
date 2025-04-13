@@ -167,7 +167,7 @@ const closePanel = () => {
   top: 50%;
   transform: translateY(-50%);
   width: 300px;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.4);
   color: white;
   transition: all 0.3s ease;
   z-index: 1000;
@@ -176,7 +176,7 @@ const closePanel = () => {
 }
 
 .toolbar-container.collapsed {
-  width: 60px;
+  width: 36px;
   margin-left:0;
 }
 
@@ -202,6 +202,10 @@ const closePanel = () => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.toolbar-container.collapsed .main-tools {
+  padding-left:0;
 }
 
 .tool-item {
