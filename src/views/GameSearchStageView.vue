@@ -6,10 +6,11 @@
 </template>
 
 <script>
+import ToolBar from "@/components/ToolBar.vue";
 export default {
   name: 'GameSearchStageView',
   components: {
-    ToolBar: () => import('@/components/ToolBar.vue')
+    ToolBar
   },
   data() {
     return {

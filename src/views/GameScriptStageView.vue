@@ -11,10 +11,11 @@
 </template>
 
 <script>
+import ToolBar from "@/components/ToolBar.vue";
 export default {
   name: 'GameScriptStageView',
   components: {
-    ToolBar: () => import('@/components/ToolBar.vue')
+    ToolBar
   },
   data() {
     return {
