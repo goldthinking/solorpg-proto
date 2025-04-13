@@ -48,7 +48,7 @@
 </template>
 
 <script>
-import ToolBar from "@/components/ToobBar.vue";
+import ToolBar from "@/components/ToolBar.vue";
 export default {
   name: 'GameReasoningStageView',
   components: {ToolBar},
