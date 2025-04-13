@@ -43,7 +43,7 @@
         进入搜查阶段
       </button>
     </div>
-    <ToolBar />
+    <ToolBar :items="allTools" />
   </div>
 </template>
 
@@ -51,9 +51,12 @@
 import ToolBar from "@/components/ToolBar.vue";
 export default {
   name: 'GameReasoningStageView',
-  components: {ToolBar},
+  components: {
+    ToolBar: () => import('@/components/ToolBar.vue')
+  },
   data() {
     return {
+      toolTypes: ['script', 'clue', 'character', 'note'],
       questions: [
         "作为警方调查员，你认为这个雪夜里谁最有可能进入死者的房间？为什么？",
         "李小姐声称整晚都在房间，但王管家说看见她在走廊徘徊。请分析两人的证词，并说明谁更可信。",
