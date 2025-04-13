@@ -14,13 +14,13 @@
     <!-- 主工具栏 -->
     <div class="main-tools" v-if="!activePanel">
       <div
-          v-for="tool in tools"
-          :key="tool.type"
+          v-for="toolType in toolTypes"
+          :key="toolType"
           class="tool-item"
-          @click="openPanel(tool.type)"
+          @click="openPanel(toolType)"
       >
-        <Icon :icon="tool.icon" />
-        <span class="tool-label">{{ tool.label }}</span>
+        <Icon :icon="toolIcons[toolType]" />
+        <span class="tool-label">{{ toolLabels[toolType] }}</span>
       </div>
     </div>
 
@@ -86,16 +86,34 @@
 import { ref, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 
+const props = defineProps({
+  toolTypes: {
+    type: Array,
+    required: true,
+    default: () => ['script', 'clue', 'character', 'note']
+  }
+})
+
 const isExpanded = ref(false)
 const activePanel = ref(null)
 const activeChapter = ref(1)
 const activeClue = ref(null)
 
-const tools = [
-  { type: 'script', label: '剧本回顾', icon: 'mdi:book-open' },
-  { type: 'clue', label: '线索查看', icon: 'mdi:magnify' },
-  { type: 'ai', label: 'AI问答', icon: 'mdi:robot' }
-]
+const toolIcons = {
+  script: 'mdi:book',
+  clue: 'mdi:magnify',
+  character: 'mdi:account-group',
+  note: 'mdi:note-text',
+  ai: 'mdi:robot'
+}
+
+const toolLabels = {
+  script: '剧本',
+  clue: '线索',
+  character: '人物',
+  note: '笔记',
+  ai: 'AI问答'
+}
 
 // 数据示例
 const chapters = ref([
@@ -149,7 +167,7 @@ const closePanel = () => {
   top: 50%;
   transform: translateY(-50%);
   width: 300px;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.4);
   color: white;
   transition: all 0.3s ease;
   z-index: 1000;
@@ -158,7 +176,7 @@ const closePanel = () => {
 }
 
 .toolbar-container.collapsed {
-  width: 60px;
+  width: 36px;
   margin-left:0;
 }
 
@@ -184,6 +202,10 @@ const closePanel = () => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.toolbar-container.collapsed .main-tools {
+  padding-left:0;
 }
 
 .tool-item {

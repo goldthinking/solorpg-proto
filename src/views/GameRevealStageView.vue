@@ -1,17 +1,22 @@
 <template>
   <div class="game-reveal-stage-view">
-    <h1>游戏-揭秘页面</h1>
+    <StageHeader stageName="揭秘阶段" />
   </div>
 </template>
 
 <script>
+import StageHeader from "@/components/StageHeader.vue";
 export default {
-  name: 'GameRevealStageView'
+  name: 'GameRevealStageView',
+  components: {
+    StageHeader
+  }
 }
 </script>
 
 <style scoped>
 .game-reveal-stage-view {
   padding: 20px;
+  padding-top: calc(20px + var(--stage-header-height));
 }
 </style>

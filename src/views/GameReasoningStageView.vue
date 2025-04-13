@@ -1,6 +1,7 @@
 <template>
   <div class="game-reasoning-stage-view">
-    <h1>游戏-推理阶段</h1>
+    <ToolBar :toolTypes="toolTypes" />
+    <StageHeader stageName="推理阶段" />
     
     <!-- 提示灯泡 -->
     <div class="hint-button" @click="showHint">
@@ -43,17 +44,28 @@
         进入搜查阶段
       </button>
     </div>
-    <ToolBar />
+    <ToolBar :items="allTools" />
+    <button class="next-stage-btn" @click="goToRevealStage">推理完成，开始揭秘</button>
   </div>
 </template>
 
 <script>
-import ToolBar from "@/components/ToobBar.vue";
+import ToolBar from "@/components/ToolBar.vue";
+import StageHeader from "@/components/StageHeader.vue";
 export default {
   name: 'GameReasoningStageView',
-  components: {ToolBar},
+  methods: {
+    goToRevealStage() {
+      this.$router.push({ name: 'game-reveal-stage' });
+    }
+  },
+  components: {
+    ToolBar,
+    StageHeader
+  },
   data() {
     return {
+      toolTypes: ['script', 'clue', 'character', 'note'],
       questions: [
         "作为警方调查员，你认为这个雪夜里谁最有可能进入死者的房间？为什么？",
         "李小姐声称整晚都在房间，但王管家说看见她在走廊徘徊。请分析两人的证词，并说明谁更可信。",
@@ -195,6 +207,7 @@ export default {
 /* 修改背景色为统一风格 */
 .game-reasoning-stage-view {
   padding: 20px;
+  padding-top: calc(20px + var(--stage-header-height));
   background-color: var(--bg-secondary);
   min-height: 100vh;
   position: relative;
@@ -371,21 +384,18 @@ button:hover {
 }
 
 .next-stage-btn {
-  background-color: #28a745;
-  color: white;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   padding: 12px 24px;
+  background-color: var(--accent-dark);
+  color: var(--text-light);
   border: none;
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 16px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.next-stage-btn:hover {
-  background-color: #218838;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .feedback {

@@ -35,11 +35,6 @@ const router = createRouter({
       component: () => import('../views/GameReasoningStageView.vue'),
     },
     {
-      path: '/game-final-stage',
-      name: 'game-final-stage',
-      component: () => import('../views/GameFinalStageView.vue'),
-    },
-    {
       path: '/game-reveal-stage',
       name: 'game-reveal-stage',
       component: () => import('../views/GameRevealStageView.vue'),
