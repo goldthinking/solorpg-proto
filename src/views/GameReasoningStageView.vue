@@ -52,13 +52,9 @@
 <script>
 import ToolBar from "@/components/ToolBar.vue";
 import StageHeader from "@/components/StageHeader.vue";
+import router from "@/router";
 export default {
   name: 'GameReasoningStageView',
-  methods: {
-    goToRevealStage() {
-      this.$router.push({ name: 'game-reveal-stage' });
-    }
-  },
   components: {
     ToolBar,
     StageHeader
@@ -198,6 +194,10 @@ export default {
     },
     showHint() {
       this.showHintPopup = !this.showHintPopup;
+    },
+    goToRevealStage(e) {
+      router.push('/game-reveal-stage');
+      e.stopPropagation();
     }
   }
 };
@@ -275,10 +275,6 @@ export default {
   margin-top: 10px;
 }
 
-.hint-content button:hover {
-  background-color: #ccc;
-}
-
 .dialogue-section {
   margin-top: 20px;
   max-width: 800px;
@@ -343,11 +339,6 @@ button {
   cursor: pointer;
   font-size: 14px;
   transition: all 0.3s ease;
-}
-
-button:hover {
-  background-color: #0056b3;
-  transform: translateY(-1px);
 }
 
 .clue-library {
