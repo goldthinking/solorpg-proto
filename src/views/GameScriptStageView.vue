@@ -2,7 +2,7 @@
   <div class="game-script-stage-view">
     <ToolBar :items="allTools" />
     <StageHeader :stageName="chapterTitle" />
-    <h2 class="script-header">第一章：神秘的开端</h2>
+    <h2 class="script-header">第一章：非常神秘的开端</h2>
     <div class="script-content">
       <p v-for="(paragraph, index) in scriptContent" :key="index">{{ paragraph }}</p>
     </div>
