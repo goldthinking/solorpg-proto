@@ -5,6 +5,7 @@
     
     <div class="dialogue-section">
       <div class="comm-device">
+        <!-- 对话内容始终显示 -->
         <div class="device-header">
           <div class="status-bar">
             <span class="connection">已连接 - 特别调查局通讯网络</span>
@@ -20,50 +21,64 @@
             <template v-if="message.type === 'ai'">
               <div class="avatar">
                 <img src="/images/avatar-c.png" alt="C君">
-                <span class="name">C君</span>
+                <span class="name">助手</span>
               </div>
               <div class="message-content">
                 <p v-html="message.content"></p>
               </div>
             </template>
+            <!-- 添加玩家消息模板 -->
             <template v-else>
-              <div class="message-content">
+              <div class="message-content player-message">
                 <p v-html="message.content"></p>
               </div>
               <div class="avatar">
                 <img src="/images/avatar-d.jpg" alt="D调查员">
-                <span class="name">D调查员</span>
+                <span class="name">调查员D</span>
               </div>
             </template>
           </div>
         </div>
 
-        <div class="player-response">
-          <textarea v-model="playerAnswer" 
-                    placeholder="输入调查报告内容..." 
-                    @keyup.ctrl.enter="submitAnswer">
-          </textarea>
-          <button @click="submitAnswer">
-            <i class="fas fa-paper-plane"></i>
-            发送报告
+        <!-- 初始选择按钮只在开始时显示 -->
+        <div v-if="!gameStarted" class="initial-buttons">
+          <button @click="startInitialReasoning" class="phase-btn">
+            开始线索归档
+          </button>
+          <button @click="startInitialSearch" class="phase-btn">
+            案件疑问探查
           </button>
         </div>
-      </div>
 
-      <!-- 阶段转换按钮 -->
-      <div class="phase-buttons">
-        <button v-if="gamePhase === 'search'" 
-                @click="startReasoning" 
-                class="phase-btn">
-          没什么疑问了，进行现阶段线索归档吧
-        </button>
-        <button v-if="gamePhase === 'reasoning'" 
-                @click="backToSearch" 
-                :disabled="remainingQuestions === 0"
-                class="phase-btn">
-          我还有一些疑惑，你帮我搜一下
-        </button>
+        <!-- 其他部分只在游戏开始后显示 -->
+        <div v-else>
+          <div class="player-response">
+            <textarea v-model="playerAnswer" 
+                      placeholder="输入调查报告内容..." 
+                      @keyup.ctrl.enter="submitAnswer">
+            </textarea>
+            <button @click="submitAnswer">
+              <i class="fas fa-paper-plane"></i>
+              发送报告
+            </button>
+          </div>
+        </div>
       </div>
+    </div>
+
+    <!-- 阶段转换按钮 -->
+    <div v-if="gameStarted" class="phase-buttons">
+      <button v-if="gamePhase === 'search'" 
+              @click="startReasoning" 
+              class="phase-btn">
+        没什么疑问了，进行现阶段线索归档吧
+      </button>
+      <button v-if="gamePhase === 'reasoning'" 
+              @click="backToSearch" 
+              :disabled="remainingQuestions === 0"
+              class="phase-btn">
+        我还有一些疑惑，你帮我搜一下
+      </button>
     </div>
 
     <!-- 线索库 -->
@@ -80,7 +95,7 @@
     <button v-if="canProceedToReveal" 
             class="next-stage-btn" 
             @click="goToRevealStage">
-      推理完成，开始揭秘
+      查看完整案情
     </button>
   </div>
 </template>
@@ -97,22 +112,47 @@ export default {
   },
   data() {
     return {
-      gamePhase: 'search',
+      gameStarted: false,
+      gamePhase: 'init',
       remainingQuestions: 5,
       currentReasoningIndex: 0,
       toolTypes: ['script', 'clue', 'character', 'note'],
       chatHistory: [],
       playerAnswer: '',
       clues: [],
-      reasoningQuestions: [
-        "作为警方调查员，你认为这个雪夜里谁最有可能进入死者的房间？为什么？",
-        "李小姐声称整晚都在房间，但王管家说看见她在走廊徘徊。请分析两人的证词，并说明谁更可信。",
-        "林医生发现死者遗体上有一些特殊痕迹，你觉得这些痕迹说明了什么？"
-      ],
-      scorePoints: {
-        question0: ['足迹', '雪地', '时间', '行动'],
-        question1: ['动机', '性格', '证词', '关系'],
-        question2: ['痕迹', '工具', '现场', '证据']
+      dialogueFlow: {
+        initial: {
+          content: "对这个案件有头绪了吗，那我们进行线索归档吧！如果还有任何疑惑，我可以偷偷贿赂Adam查一查哦？"
+        },
+        searchPhase: {
+          opening: "D sir，我给管档案的Adam上供了5瓶胡椒博士，他松口说我们可以查5个问题，你有什么要搜的吗？",
+          outOfQuestions: "不行不行，Adam黑脸了，我先溜了^^",
+          responses: {
+            isOut: "是！完全被你看穻了！",
+            notSuicide: "否。D sir再仔细想想吧！",
+            irrelevant: "欸？好像与此无关吧……"
+          }
+        },
+        reasoningPhase: {
+          question1: {
+            prompt: "这个雪夜里谁最有可能进入死者的房间？为什么？",
+            wrongAnswer: "李小姐吧。她说谎了，明明在晚上出过门。",
+            feedback: "欸豆，是这样吗？那我记下来了？【试探.jpg】或者D sir再考虑一下？",
+            correctAnswer: "根据雪地足迹和行动时间分析,管家最有可能进入死者房间。因为当晚雪地上有新鲜足迹通向死者房间,且根据时间线,管家是最后一个见到死者的人。",
+            keywords: ['足迹', '雪地', '时间', '行动']
+          },
+          question2: {
+            prompt: "原来是这样！那李小姐声称整晚都在房间，但王管家说看见她在走廊徘徊，很奇怪！他们到底谁在说谎？",
+            correctAnswer: "分析双方证词和关系,王管家的说法更可信。因为李小姐与死者有经济纠纷(动机),且性格冲动;而王管家作为老员工,一贯表现稳重,无明显动机。",
+            keywords: ['动机', '性格', '证词', '关系']
+          },
+          question3: {
+            prompt: "【点头.jpg】最后一个问题！林医生发现死者遗体上有一些特殊痕迹，D sir觉得这些痕迹说明了什么？",
+            correctAnswer: "死者遗体上的勒痕显示是利用细绳作案,现场发现的工具痕迹和法医鉴定证据都指向这一点。此外,死者脖子上还有特殊纤维残留。",
+            keywords: ['痕迹', '工具', '现场', '证据']
+          },
+          completion: "这种难度的案子对D sir简直是信手拈来嘛，线索都归档完毕了，D sir可以看看完整案情~"
+        }
       }
     }
   },
@@ -120,15 +160,29 @@ export default {
   computed: {
     canProceedToReveal() {
       return this.gamePhase === 'reasoning' && 
-             this.currentReasoningIndex >= this.reasoningQuestions.length - 1;
+             this.currentReasoningIndex >= Object.keys(this.dialogueFlow.reasoningPhase).length - 2;
     }
   },
 
   methods: {
+    startInitialReasoning() {
+      this.gameStarted = true;
+      this.gamePhase = 'reasoning';
+      this.startReasoning();
+    },
+
+    startInitialSearch() {
+      this.gameStarted = true;
+      this.gamePhase = 'search';
+      this.chatHistory.push({
+        type: 'ai',
+        content: this.dialogueFlow.searchPhase.opening
+      });
+    },
+
     async submitAnswer() {
       if (!this.playerAnswer.trim()) return;
 
-      // 添加玩家回答到对话历史
       this.chatHistory.push({ 
         type: 'player', 
         content: this.playerAnswer 
@@ -141,6 +195,12 @@ export default {
       }
       
       this.playerAnswer = '';
+      
+      // 自动滚动到底部
+      this.$nextTick(() => {
+        const chatBox = document.querySelector('.chat-box');
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
     },
 
     async handleSearchPhase() {
@@ -151,26 +211,53 @@ export default {
           content: response
         });
         this.remainingQuestions--;
+      } else {
+        this.chatHistory.push({
+          type: 'ai',
+          content: this.dialogueFlow.searchPhase.outOfQuestions
+        });
       }
     },
 
     async handleReasoningPhase() {
-      const score = this.evaluateAnswer(this.playerAnswer);
-      const feedback = this.generateFeedback(score);
+      const currentQuestion = this.dialogueFlow.reasoningPhase[`question${this.currentReasoningIndex + 1}`];
       
-      this.chatHistory.push({
-        type: 'ai',
-        content: feedback
-      });
-
-      if (score >= 75 && this.currentReasoningIndex < this.reasoningQuestions.length - 1) {
-        this.currentReasoningIndex++;
-        setTimeout(() => {
+      // 如果是第一题的错误答案
+      if (this.currentReasoningIndex === 0 && 
+          this.playerAnswer.includes("李小姐")) {
+        this.chatHistory.push({
+          type: 'ai',
+          content: currentQuestion.feedback
+        });
+        return;
+      }
+      
+      const score = this.evaluateAnswer(this.playerAnswer, currentQuestion.keywords);
+      if (score >= 75) {
+        this.chatHistory.push({
+          type: 'ai',
+          content: currentQuestion.correctAnswer
+        });
+        
+        if (this.currentReasoningIndex < 2) {
+          this.currentReasoningIndex++;
+          setTimeout(() => {
+            this.chatHistory.push({
+              type: 'ai',
+              content: this.dialogueFlow.reasoningPhase[`question${this.currentReasoningIndex + 1}`].prompt
+            });
+          }, 1000);
+        } else {
           this.chatHistory.push({
             type: 'ai',
-            content: this.reasoningQuestions[this.currentReasoningIndex]
+            content: this.dialogueFlow.reasoningPhase.completion
           });
-        }, 1000);
+        }
+      } else {
+        this.chatHistory.push({
+          type: 'ai',
+          content: "请再仔细思考一下~"
+        });
       }
     },
 
@@ -178,7 +265,7 @@ export default {
       this.gamePhase = 'reasoning';
       this.chatHistory.push({
         type: 'ai',
-        content: this.reasoningQuestions[0]
+        content: this.dialogueFlow.reasoningPhase.question1.prompt
       });
     },
 
@@ -193,31 +280,18 @@ export default {
     },
 
     getSearchResponse(question) {
-      const responses = ['是', '否', '与此无关'];
-      return responses[Math.floor(Math.random() * responses.length)];
-    },
-
-    evaluateAnswer(answer) {
-      const currentKeywords = this.scorePoints[`question${this.currentReasoningIndex}`];
-      const foundKeywords = currentKeywords.filter(keyword => answer.includes(keyword));
-      return Math.min(foundKeywords.length * 25, 100);
-    },
-
-    generateFeedback(score) {
-      if (score >= 75) {
-        return `
-          <div class="feedback">
-            <p>分析很到位！你的推理非常有说服力。</p>
-            <p class="score-hint">✓ 已达到进入下一题的要求</p>
-          </div>
-        `;
+      if (question.includes("李小姐") && question.includes("房间")) {
+        return this.dialogueFlow.searchPhase.responses.isOut;
       }
-      return `
-        <div class="feedback">
-          <p>推理还需要更多细节支持。</p>
-          <p class="score-hint">✗ 请考虑更多关键要素</p>
-        </div>
-      `;
+      if (question.includes("自杀")) {
+        return this.dialogueFlow.searchPhase.responses.notSuicide;
+      }
+      return this.dialogueFlow.searchPhase.responses.irrelevant;
+    },
+
+    evaluateAnswer(answer, keywords) {
+      const foundKeywords = keywords.filter(keyword => answer.includes(keyword));
+      return Math.min(foundKeywords.length * 25, 100);
     },
 
     goToRevealStage() {
@@ -226,10 +300,15 @@ export default {
   },
 
   mounted() {
+    // 初始化时只显示开场白
     this.chatHistory.push({ 
       type: 'ai', 
-      content: 'D sir，我给管档案的Adam上供了5瓶胡椒博士，他答应我们可以查5个问题，你有什么要搜的吗？' 
+      content: this.dialogueFlow.initial.content
     });
+    
+    // 其他状态保持为初始值
+    this.gameStarted = false;
+    this.gamePhase = 'init';
   }
 }
 </script>
@@ -325,11 +404,14 @@ export default {
   padding: 12px;
   color: #fff;
   max-width: 70%;
+  word-break: break-word;
 }
 
-.chat-message.player .message-content {
-  background: rgba(0, 255, 150, 0.1);
-  border-color: rgba(0, 255, 150, 0.2);
+.chat-message.player .message-content,
+.player-message {
+  background: rgba(0, 255, 150, 0.1) !important;
+  border-color: rgba(0, 255, 150, 0.2) !important;
+  margin-left: auto;
 }
 
 .player-response {
@@ -392,20 +474,72 @@ button:hover {
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
+  0% { opacity: 1; }
   50% { opacity: 0.5; }
+  100% { opacity: 1; }
 }
 
-.feedback {
-  padding: 10px;
-  margin-top: 5px;
-  border-radius: 5px;
-  line-height: 1.5;
+.initial-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 20px 0;
+  padding: 20px;
+  background: rgba(0, 150, 255, 0.05);
+  border-radius: 10px;
 }
 
-.score-hint {
-  margin-top: 8px;
-  font-style: italic;
-  color: #aaa;
+.phase-btn,
+.initial-buttons .phase-btn {
+  background: linear-gradient(90deg, #0066ff 0%, #00d0ff 100%);
+  border: none;
+  padding: 15px 30px;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  min-width: 200px;
+  text-align: center;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.phase-btn:hover,
+.initial-buttons .phase-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 208, 255, 0.3);
+}
+
+.phase-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chat-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-box::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.chat-box::-webkit-scrollbar-thumb {
+  background: rgba(0, 150, 255, 0.5);
+  border-radius: 3px;
+}
+
+.message-content {
+  max-width: 70%;
+  word-break: break-word;
+}
+
+.chat-message {
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+.phase-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 208, 255, 0.3);
 }
 </style>
