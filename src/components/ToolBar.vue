@@ -199,6 +199,19 @@ const chapters = ref([
       ▷ 五人合影（其中三人被红笔划去）
       ▷ 背面标注日期：2003.7.15
       ▷ 右下角潦草字迹："该偿还了"`
+  },{
+    id: 5,
+    title: '第四章 血色往事',
+    content: `旧案关联：
+    ■ 20年前青松别墅前主人周氏灭门案
+    - 相似特征：同款金色怀表出现现场
+    - 未解之谜：周家长子下落不明
+
+   新发现：
+    - 林国栋书桌暗格内的老照片：
+      ▷ 五人合影（其中三人被红笔划去）
+      ▷ 背面标注日期：2003.7.15
+      ▷ 右下角潦草字迹："该偿还了"`
   }
 ])
 
@@ -311,6 +324,8 @@ const closePanel = () => {
   display: flex;
   gap: 10px;
   margin-bottom: 20px;
+  white-space: nowrap; /* 文本不会换行，文本会在同一行上继续 */
+  overflow-x: auto;
 }
 
 .tab-item {
@@ -320,6 +335,7 @@ const closePanel = () => {
   background: rgba(255, 255, 255, 0.1);
   text-align: center;
   margin-top: 10px;
+
 }
 
 .tab-item.active {
@@ -375,6 +391,7 @@ const closePanel = () => {
 
 /* 如果需要限制最大高度 */
 .clue-detail img {
+  margin-top: 20px;
   max-height: 400px; /* 根据需求调整 */
 }
 
