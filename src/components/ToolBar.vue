@@ -6,11 +6,6 @@
       'detail-view': activePanel
     }"
   >
-<!--    &lt;!&ndash; 折叠按钮 &ndash;&gt;-->
-<!--    <div class="toggle-button" @click="toggleToolbar">-->
-<!--      <Icon :icon="isExpanded ? 'mdi:chevron-right' : 'mdi:chevron-left'" />-->
-<!--    </div>-->
-
     <!-- 主工具栏 -->
     <div class="main-tools" v-if="!activePanel">
       <div
@@ -43,27 +38,64 @@
       </div>
     </div>
 
-    <!-- 线索详情 -->
+    <!-- 线索图文和Ai问答详情 -->
     <div v-if="activePanel === 'clue'" class="detail-panel">
-      <div class="clue-list">
+      <div class="clueAndai" >
         <div
-            v-for="clue in clues"
-            :key="clue.id"
-            class="clue-item"
-            @click="activeClue = clue.id"
+            class="tab-item"
+            :class="{ active: activeClueTab === 'clue' }"
+            @click="activeClueTab = 'clue'"
         >
-          <img :src="clue.thumbnail" alt="线索缩略图">
+          线索
+        </div>
+        <!-- AI对话选项卡 -->
+        <div
+            class="tab-item"
+            :class="{ active: activeClueTab === 'ai' }"
+            @click="activeClueTab = 'ai'"
+        >
+          AI对话
         </div>
       </div>
-      <div class="clue-detail" v-if="activeClue">
-        <img :src="activeClueData.image" alt="线索大图">
-        <p>{{ activeClueData.description }}</p>
-        <button class="close-btn" @click="activeClue = null">← 返回</button>
+
+      <div v-if="activeClueTab === 'clue'" class="clue-container">
+        <!-- 左侧缩略图列 -->
+        <div class="clue-thumbnails">
+          <div
+              v-for="clue in clues"
+              :key="clue.id"
+              class="clue-item"
+              @click="activeClue = clue.id"
+          >
+            <img
+                :src="clue.thumbnail"
+                alt="线索缩略图"
+            >
+          </div>
+        </div>
+        <!-- 右侧详情区域 -->
+        <div class="clue-detail" v-if="activeClue">
+          <img :src="activeClueData.image" alt="线索大图">
+          <p>{{ activeClueData.description }}</p>
+        </div>
+      </div>
+
+      <div v-if="activeClueTab === 'ai'" class="chat-container">
+          <div
+              v-for="(log, index) in aiLogs"
+              :key="index"
+              :class="['message', log.type]"
+          >
+            <div class="avatar">
+              <Icon :icon="log.type === 'user' ? 'mdi:account' : 'mdi:robot'" />
+            </div>
+            <div class="content">{{ log.content }}</div>
+          </div>
       </div>
       <button class="close-btn" @click="closePanel">×</button>
     </div>
 
-    <!-- AI问答 -->
+    <!-- 笔记 -->
     <div v-if="activePanel === 'note'" class="detail-panel">
       <div class="chat-container">
         <div
@@ -80,6 +112,7 @@
       <button class="close-btn" @click="closePanel">×</button>
     </div>
   </div>
+
 </template>
 
 <script setup>
@@ -98,6 +131,7 @@ const isExpanded = ref(false)
 const activePanel = ref(null)
 const activeChapter = ref(1)
 const activeClue = ref(null)
+const activeClueTab = ref('clue')
 
 const toolIcons = {
   script: 'mdi:book',
@@ -113,7 +147,7 @@ const toolLabels = {
   ai: 'AI问答'
 }
 
-// 数据示例
+// 数据
 const chapters = ref([
   {
     id: 1,
@@ -172,8 +206,13 @@ const clues = ref([
   {
     id: 1,
     description: '断裂的怀表（时间停在11:05）',
-    image: '/clues/clue1-full.jpg',
-    thumbnail: '/clues/clue1-thumb.jpg'
+    image: 'src/assets/watchtest.png',
+    thumbnail: 'src/assets/watchtest.png'
+  },{
+    id: 2,
+    description: '断裂的怀表',
+    image: 'src/assets/watchtest.png',
+    thumbnail: 'src/assets/watchtest.png'
   }
 ])
 
@@ -190,11 +229,6 @@ const activeClueData = computed(() =>
     clues.value.find(c => c.id === activeClue.value) || {}
 )
 
-// const toggleToolbar = () => {
-//   if (!activePanel.value) {
-//     isExpanded.value = !isExpanded.value
-//   }
-// }
 
 const openPanel = (type) => {
   isExpanded.value = false
@@ -234,15 +268,6 @@ const closePanel = () => {
   transform: translateY(-50%);
 }
 
-.toggle-button {
-  position: absolute;
-  left: -40px;
-  top: 10px;
-  cursor: pointer;
-  padding: 10px;
-  background: #2c3e50;
-  border-radius: 5px 0 0 5px;
-}
 
 .main-tools {
   padding: 15px 10px; /* 调整内边距 */
@@ -264,10 +289,7 @@ const closePanel = () => {
   border-radius: 8px;
   transition: all 0.2s;
 }
-.icon-wrapper {
-  font-size: 1.5rem;
-  display: flex;
-}
+
 
 .tool-label {
   font-size: 0.9rem;
@@ -308,33 +330,65 @@ const closePanel = () => {
 .chapter-content {
   line-height: 1.6;
 }
+.clueAndai {
+  display: flex;
+  gap: 10px
+}
 
-.clue-list {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
+.clue-container {
+  display: flex;
+  gap: 20px; /* 控制左右间距 */
+  height: 80vh; /* 根据需要设置容器高度 */
+}
+
+.clue-thumbnails {
+  display: flex;
+  flex-direction: column; /* 纵向排列 */
+  gap: 10px; /* 缩略图间距 */
+  overflow-y: auto; /* 添加垂直滚动条 */
+  width: 50px; /* 左侧列宽度 */
+  padding: 10px;
+  background: rgba(245, 245, 245, 0); /* 可选背景色 */
+}
+
+.clue-item {
+  cursor: pointer;
+  transition: transform 0.2s;
+  width: 50px; /* 固定缩略图宽度 */
+  height: 50px; /* 固定缩略图高度 */
 }
 
 .clue-item img {
-  width: 100%;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: transform 0.3s;
+  width: 80%;
+  height: auto;
+  object-fit: contain;  /* 保持图片比例 */
+  border: 2px solid transparent;
 }
 
-.clue-item:hover img {
+.clue-item:hover {
   transform: scale(1.05);
 }
 
-.clue-detail img {
-  max-width: 100%;
-  max-height: 400px;
-  margin-bottom: 20px;
+.clue-item.active img { /* 选中状态 */
+  border-color: #776ad8;
 }
 
+/* 如果需要限制最大高度 */
+.clue-detail img {
+  max-height: 400px; /* 根据需求调整 */
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .clue-detail {
+    width: 200px;
+    min-width: 180px;
+  }
+}
+
+
 .chat-container {
+  margin-top: 20px;
   height: calc(100% - 50px);
   overflow-y: auto;
 }
