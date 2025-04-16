@@ -6,10 +6,10 @@
       'detail-view': activePanel
     }"
   >
-    <!-- 折叠按钮 -->
-    <div class="toggle-button" @click="toggleToolbar">
-      <Icon :icon="isExpanded ? 'mdi:chevron-right' : 'mdi:chevron-left'" />
-    </div>
+<!--    &lt;!&ndash; 折叠按钮 &ndash;&gt;-->
+<!--    <div class="toggle-button" @click="toggleToolbar">-->
+<!--      <Icon :icon="isExpanded ? 'mdi:chevron-right' : 'mdi:chevron-left'" />-->
+<!--    </div>-->
 
     <!-- 主工具栏 -->
     <div class="main-tools" v-if="!activePanel">
@@ -58,13 +58,13 @@
       <div class="clue-detail" v-if="activeClue">
         <img :src="activeClueData.image" alt="线索大图">
         <p>{{ activeClueData.description }}</p>
-        <button class="close-btn" @click="activeClue = null">← 返回列表</button>
+        <button class="close-btn" @click="activeClue = null">← 返回</button>
       </div>
       <button class="close-btn" @click="closePanel">×</button>
     </div>
 
     <!-- AI问答 -->
-    <div v-if="activePanel === 'ai'" class="detail-panel">
+    <div v-if="activePanel === 'note'" class="detail-panel">
       <div class="chat-container">
         <div
             v-for="(log, index) in aiLogs"
@@ -90,7 +90,7 @@ const props = defineProps({
   toolTypes: {
     type: Array,
     required: true,
-    default: () => ['script', 'clue', 'character', 'note']
+    default: () => ['script', 'clue', 'note']
   }
 })
 
@@ -102,7 +102,6 @@ const activeClue = ref(null)
 const toolIcons = {
   script: 'mdi:book',
   clue: 'mdi:magnify',
-  character: 'mdi:account-group',
   note: 'mdi:note-text',
   ai: 'mdi:robot'
 }
@@ -110,7 +109,6 @@ const toolIcons = {
 const toolLabels = {
   script: '剧本',
   clue: '线索',
-  character: '人物',
   note: '笔记',
   ai: 'AI问答'
 }
@@ -143,14 +141,14 @@ const activeClueData = computed(() =>
     clues.value.find(c => c.id === activeClue.value) || {}
 )
 
-const toggleToolbar = () => {
-  if (!activePanel.value) {
-    isExpanded.value = !isExpanded.value
-  }
-}
+// const toggleToolbar = () => {
+//   if (!activePanel.value) {
+//     isExpanded.value = !isExpanded.value
+//   }
+// }
 
 const openPanel = (type) => {
-  isExpanded.value = true
+  isExpanded.value = false
   activePanel.value = type
 }
 
@@ -242,7 +240,7 @@ const closePanel = () => {
 }
 
 .tab-item.active {
-  background: #42b983;
+  background: #776ad8;
   font-weight: bold;
 }
 
