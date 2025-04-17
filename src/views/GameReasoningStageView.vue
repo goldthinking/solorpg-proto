@@ -153,24 +153,29 @@ export default {
           ]
         },
         reasoningPhase: {
-          question1: {
-            prompt: "这个雪夜里谁最有可能进入死者的房间？为什么？",
-            wrongAnswer: "李小姐吧。她说谎了，明明在晚上出过门。",
-            feedback: "欸豆，是这样吗？那我记下来了？【试探.jpg】或者D sir再考虑一下？",
-            correctAnswer: "根据雪地足迹和行动时间分析,管家最有可能进入死者房间。因为当晚雪地上有新鲜足迹通向死者房间,且根据时间线,管家是最后一个见到死者的人。",
-            keywords: ['足迹', '雪地', '时间', '行动']
-          },
-          question2: {
-            prompt: "原来是这样！那李小姐声称整晚都在房间，但王管家说看见她在走廊徘徊，很奇怪！他们到底谁在说谎？",
-            correctAnswer: "分析双方证词和关系,王管家的说法更可信。因为李小姐与死者有经济纠纷(动机),且性格冲动;而王管家作为老员工,一贯表现稳重,无明显动机。",
-            keywords: ['动机', '性格', '证词', '关系']
-          },
-          question3: {
-            prompt: "【点头.jpg】最后一个问题！林医生发现死者遗体上有一些特殊痕迹，D sir觉得这些痕迹说明了什么？",
-            correctAnswer: "死者遗体上的勒痕显示是利用细绳作案,现场发现的工具痕迹和法医鉴定证据都指向这一点。此外,死者脖子上还有特殊纤维残留。",
-            keywords: ['痕迹', '工具', '现场', '证据']
-          },
-          completion: "这种难度的案子对D sir简直是信手拈来嘛，线索都归档完毕了，D sir可以看看完整案情~"
+          opening: "让我们开始线索归档吧！我会根据你的分析记录重要线索。",
+          examples: [
+            {
+              question: "这个雪夜里谁最有可能进入死者的房间？为什么？",
+              wrongAnswer: "李小姐吧。她说谎了，明明在晚上出过门。",
+              correctAnswer: "分析足迹和时间线，应该是管家。雪地上有新鲜足迹通向死者房间，而且根据时间线管家是最后见到死者的人。",
+              response: "这个推理很有道理！【记录中.jpg】根据足迹和时间线确实能得出这个结论。",
+              keywords: ['足迹', '雪地', '时间', '行动']
+            },
+            {
+              question: "李小姐和王管家的证词冲突，谁更可信？",
+              playerAnswer: "王管家的说法更可信。因为李小姐与死者有经济纠纷且性格冲动，而王管家是老员工，性格稳重没有作案动机。",
+              response: "没错！分析人物关系和动机很重要。",
+              keywords: ['动机', '性格', '证词', '关系']
+            },
+            {
+              question: "法医发现的痕迹说明了什么？",
+              playerAnswer: "死者遗体上的勒痕和现场工具痕迹显示是用细绳作案，而且在死者脖子上还发现了特殊纤维残留。",
+              response: "完全正确！看来D sir已经完全理清了案情。准备好查看完整案情了吗？",
+              keywords: ['痕迹', '工具', '现场', '证据']
+            }
+          ],
+          completion: "这种难度的案子对D sir简直是信手拈来嘛，线索都归档完毕了，我们来看看完整案情吧~"
         }
       }
     }
@@ -263,14 +268,14 @@ export default {
     },
 
     async handleReasoningPhase() {
-      const currentQuestion = this.dialogueFlow.reasoningPhase[`question${this.currentReasoningIndex + 1}`];
+      const currentQuestion = this.dialogueFlow.reasoningPhase.examples[this.currentReasoningIndex];
       
       // 如果是第一题的错误答案
       if (this.currentReasoningIndex === 0 && 
           this.playerAnswer.includes("李小姐")) {
         this.chatHistory.push({
           type: 'ai',
-          content: currentQuestion.feedback
+          content: currentQuestion.wrongAnswer
         });
         return;
       }
@@ -279,7 +284,7 @@ export default {
       if (score >= 75) {
         this.chatHistory.push({
           type: 'ai',
-          content: currentQuestion.correctAnswer
+          content: currentQuestion.response
         });
         
         if (this.currentReasoningIndex < 2) {
@@ -287,7 +292,7 @@ export default {
           setTimeout(() => {
             this.chatHistory.push({
               type: 'ai',
-              content: this.dialogueFlow.reasoningPhase[`question${this.currentReasoningIndex + 1}`].prompt
+              content: this.dialogueFlow.reasoningPhase.examples[this.currentReasoningIndex].question
             });
           }, 1000);
         } else {
@@ -308,8 +313,45 @@ export default {
       this.gamePhase = 'reasoning';
       this.chatHistory.push({
         type: 'ai',
-        content: this.dialogueFlow.reasoningPhase.question1.prompt
+        content: this.dialogueFlow.reasoningPhase.opening
       });
+      
+      // 添加示例对话
+      setTimeout(() => {
+        this.dialogueFlow.reasoningPhase.examples.forEach((example, index) => {
+          setTimeout(() => {
+            // 显示问题
+            this.chatHistory.push({
+              type: 'ai',
+              content: example.question
+            });
+            
+            // 显示玩家示例回答
+            setTimeout(() => {
+              this.chatHistory.push({
+                type: 'player',
+                content: example.playerAnswer || example.correctAnswer
+              });
+              
+              // 显示助手回应
+              setTimeout(() => {
+                this.chatHistory.push({
+                  type: 'ai',
+                  content: example.response
+                });
+              }, 800);
+            }, 800);
+          }, index * 2500); // 每组对话间隔2.5秒
+        });
+        
+        // 最后显示完成提示
+        setTimeout(() => {
+          this.chatHistory.push({
+            type: 'ai',
+            content: this.dialogueFlow.reasoningPhase.completion
+          });
+        }, this.dialogueFlow.reasoningPhase.examples.length * 2500);
+      }, 1000);
     },
 
     backToSearch() {
