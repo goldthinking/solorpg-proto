@@ -5,7 +5,7 @@
     
     <div class="dialogue-section">
       <div class="comm-device">
-        <!-- 对话内容始终显示 -->
+        <!-- 保持设备头部不变 -->
         <div class="device-header">
           <div class="status-bar">
             <span class="connection">已连接 - 特别调查局通讯网络</span>
@@ -41,7 +41,7 @@
           </div>
         </div>
 
-        <!-- 初始选择按钮只在开始时显示 -->
+        <!-- 初始选择按钮 -->
         <div v-if="!gameStarted" class="initial-buttons">
           <button @click="startInitialReasoning" class="phase-btn">
             开始线索归档
@@ -51,7 +51,7 @@
           </button>
         </div>
 
-        <!-- 其他部分只在游戏开始后显示 -->
+        <!-- 游戏开始后的输入区域 -->
         <div v-else>
           <div class="player-response">
             <textarea v-model="playerAnswer" 
@@ -82,16 +82,6 @@
       </button>
     </div>
 
-    <!-- 线索库 -->
-    <div class="clue-library" v-if="clues.length">
-      <h3>线索库</h3>
-      <ul>
-        <li v-for="(clue, index) in clues" :key="index">
-          <strong>{{ clue }}</strong>
-        </li>
-      </ul>
-    </div>
-
     <!-- 揭秘按钮 -->
     <div class="reveal-button-container" v-if="canProceedToReveal">
       <button class="next-stage-btn" @click="goToRevealStage">
@@ -120,7 +110,6 @@ export default {
       toolTypes: ['script', 'clue', 'character', 'note'],
       chatHistory: [],
       playerAnswer: '',
-      clues: [],
       dialogueFlow: {
         initial: {
           content: "对这个案件有头绪了吗，那我们进行线索归档吧！如果还有任何疑惑，我可以偷偷贿赂Adam查一查哦？"
