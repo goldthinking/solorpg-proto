@@ -93,11 +93,11 @@
     </div>
 
     <!-- 揭秘按钮 -->
-    <button v-if="canProceedToReveal" 
-            class="next-stage-btn" 
-            @click="goToRevealStage">
-      查看完整案情
-    </button>
+    <div class="reveal-button-container" v-if="canProceedToReveal">
+      <button class="next-stage-btn" @click="goToRevealStage">
+        查看完整案情
+      </button>
+    </div>
   </div>
 </template>
 
@@ -586,23 +586,36 @@ button:hover {
 }
 
 .next-stage-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
+  position: relative;  /* 改为相对定位 */
+  display: block;     /* 块级元素 */
+  margin: 30px auto;  /* 上下间距30px，左右自动居中 */
   background: linear-gradient(90deg, #00ff88 0%, #00d0ff 100%);
   border: none;
-  padding: 15px 30px;
+  padding: 15px 40px;    /* 增加左右内边距 */
   color: white;
   border-radius: 8px;
   cursor: pointer;
   font-size: 16px;
+  font-weight: bold;     /* 加粗文字 */
   animation: fadeIn 0.5s ease-in-out;
   box-shadow: 0 4px 15px rgba(0, 208, 255, 0.3);
+  min-width: 200px;      /* 设置最小宽度 */
+  text-align: center;    /* 文字居中 */
 }
 
 .next-stage-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0, 208, 255, 0.4);
+  background: linear-gradient(90deg, #00ff99 0%, #00e5ff 100%); /* 微调悬浮时的渐变色 */
+}
+
+/* 添加一个新的容器来包裹按钮 */
+.reveal-button-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+  margin-top: 20px;
 }
 
 @keyframes fadeIn {
