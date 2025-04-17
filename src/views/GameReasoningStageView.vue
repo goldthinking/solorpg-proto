@@ -132,7 +132,25 @@ export default {
             isOut: "是！完全被你看穿了！",
             notSuicide: "否。D sir再仔细想想吧！",
             irrelevant: "欸？好像与此无关吧……"
-          }
+          },
+          // 添加示例对话
+          examples: [
+            {
+              question: "李小姐昨天夜里不在房间里吧？",
+              answer: "是！完全被你看穿了！",
+              type: "isOut"
+            },
+            {
+              question: "助手喜欢喝胡椒博士吗？",
+              answer: "欸？好像与此无关吧……",
+              type: "irrelevant"
+            },
+            {
+              question: "死者是自杀吗？",
+              answer: "否。D sir再仔细想想吧！",
+              type: "notSuicide"
+            }
+          ]
         },
         reasoningPhase: {
           question1: {
@@ -175,10 +193,34 @@ export default {
     startInitialSearch() {
       this.gameStarted = true;
       this.gamePhase = 'search';
+      
+      // 显示开场白
       this.chatHistory.push({
         type: 'ai',
         content: this.dialogueFlow.searchPhase.opening
       });
+      
+      // 添加一个短暂延迟后显示示例对话
+      setTimeout(() => {
+        // 为每个示例创建一问一答的对话
+        this.dialogueFlow.searchPhase.examples.forEach((example, index) => {
+          setTimeout(() => {
+            // 添加问题
+            this.chatHistory.push({
+              type: 'player',
+              content: example.question
+            });
+            
+            // 添加回答
+            setTimeout(() => {
+              this.chatHistory.push({
+                type: 'ai',
+                content: example.answer
+              });
+            }, 500);
+          }, index * 1500); // 每组对话间隔1.5秒
+        });
+      }, 1000);
     },
 
     async submitAnswer() {
