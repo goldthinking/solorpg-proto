@@ -18,21 +18,22 @@
                :key="index" 
                class="chat-message" 
                :class="message.type">
+            <!-- AI消息模板 -->
             <template v-if="message.type === 'ai'">
-              <div class="avatar">
+              <div class="avatar ai-avatar">
                 <img src="/images/avatar-c.png" alt="C君">
                 <span class="name">助手</span>
               </div>
-              <div class="message-content">
+              <div class="message-content ai-message">
                 <p v-html="message.content"></p>
               </div>
             </template>
-            <!-- 添加玩家消息模板 -->
+            <!-- 玩家消息模板 -->
             <template v-else>
               <div class="message-content player-message">
                 <p v-html="message.content"></p>
               </div>
-              <div class="avatar">
+              <div class="avatar player-avatar">
                 <img src="/images/avatar-d.jpg" alt="D调查员">
                 <span class="name">调查员D</span>
               </div>
@@ -128,7 +129,7 @@ export default {
           opening: "D sir，我给管档案的Adam上供了5瓶胡椒博士，他松口说我们可以查5个问题，你有什么要搜的吗？",
           outOfQuestions: "不行不行，Adam黑脸了，我先溜了^^",
           responses: {
-            isOut: "是！完全被你看穻了！",
+            isOut: "是！完全被你看穿了！",
             notSuicide: "否。D sir再仔细想想吧！",
             irrelevant: "欸？好像与此无关吧……"
           }
@@ -357,30 +358,47 @@ export default {
   animation: blink 1.5s infinite;
 }
 
+/* 聊天框基础样式 */
 .chat-box {
   max-height: 400px;
   overflow-y: auto;
   padding: 15px;
   margin-bottom: 20px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 150, 255, 0.5) transparent;
+  display: flex;
+  flex-direction: column;
 }
 
+/* 消息容器样式 */
 .chat-message {
   display: flex;
   align-items: flex-start;
   margin-bottom: 20px;
   gap: 12px;
+  max-width: 80%;  /* 控制消息最大宽度 */
 }
 
+/* 玩家消息样式 */
 .chat-message.player {
-  flex-direction: row-reverse;
+  flex-direction: row;  /* 改回正向布局 */
+  justify-content: flex-end;  /* 靠右对齐 */
+  margin-left: auto;    /* 让整体靠右 */
+  width: 85%;          /* 控制整体宽度 */
 }
 
+/* AI消息样式 */
+.chat-message.ai {
+  padding-right: 20%;
+  width: 85%;                /* 控制整体宽度 */
+  align-self: flex-start;  /* 靠左对齐 */
+}
+
+/* 头像样式 */
 .avatar {
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 60px;  /* 固定头像容器宽度 */
 }
 
 .avatar img {
@@ -389,6 +407,7 @@ export default {
   border-radius: 50%;
   border: 2px solid #00d0ff;
   box-shadow: 0 0 10px rgba(0, 208, 255, 0.3);
+  object-fit: cover;
 }
 
 .avatar .name {
@@ -397,21 +416,35 @@ export default {
   margin-top: 4px;
 }
 
+/* 消息气泡样式 */
 .message-content {
-  background: rgba(0, 150, 255, 0.1);
-  border: 1px solid rgba(0, 150, 255, 0.2);
-  border-radius: 10px;
   padding: 12px;
+  border-radius: 10px;
   color: #fff;
-  max-width: 70%;
+  max-width: calc(100% - 80px);  /* 减去头像和间距的宽度 */
   word-break: break-word;
 }
 
-.chat-message.player .message-content,
+/* AI消息气泡 */
+.ai-message {
+  background: rgba(0, 150, 255, 0.1);
+  border: 1px solid rgba(0, 150, 255, 0.2);
+  border-radius: 0 10px 10px 10px;
+  margin-left: 12px;
+}
+
+/* 玩家消息气泡 */
 .player-message {
-  background: rgba(0, 255, 150, 0.1) !important;
-  border-color: rgba(0, 255, 150, 0.2) !important;
-  margin-left: auto;
+  background: rgba(0, 255, 150, 0.1);
+  border: 1px solid rgba(0, 255, 150, 0.2);
+  border-radius: 10px 0 10px 10px;
+  margin-right: 0;  /* 移除右侧间距 */
+  order: 1;        /* 确保消息在左边 */
+}
+
+/* 玩家头像样式 */
+.chat-message.player .avatar {
+  order: 2;        /* 确保头像在右边 */
 }
 
 .player-response {
@@ -536,6 +569,66 @@ button:hover {
 .chat-message {
   margin-bottom: 20px;
   gap: 12px;
+}
+
+/* 消息容器样式 */
+.chat-message {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 12px;
+  width: 100%;
+}
+
+/* 玩家消息样式 */
+.chat-message.player {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  margin-left: auto;
+  gap: 12px;
+  width: 85%;                 /* 控制整体宽度 */
+}
+
+/* AI消息样式 */
+.chat-message.ai {
+  padding-right: 20%;
+  width: 85%;                /* 控制整体宽度 */
+}
+
+/* 头像样式 */
+.avatar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 50px;
+}
+
+/* 消息内容样式 */
+.message-content {
+  padding: 12px;
+  border-radius: 10px;
+  color: #fff;
+  max-width: 70%;
+  word-break: break-word;
+}
+
+/* 玩家消息气泡样式 */
+.chat-message.player .message-content {
+  background: rgba(0, 255, 150, 0.1);
+  border: 1px solid rgba(0, 255, 150, 0.2);
+  border-radius: 10px 0 10px 10px;
+  margin-right: 0;  /* 移除右侧间距 */
+  order: 1;        /* 确保消息在左边 */
+}
+
+/* AI消息气泡样式 */
+.chat-message.ai .message-content {
+  background: rgba(0, 150, 255, 0.1);
+  border: 1px solid rgba(0, 150, 255, 0.2);
+  border-radius: 0 10px 10px 10px;
+  margin-left: 12px;  /* 添加左侧间距 */
 }
 
 .phase-btn:hover {
