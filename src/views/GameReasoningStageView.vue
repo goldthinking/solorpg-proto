@@ -184,7 +184,7 @@ export default {
   computed: {
     canProceedToReveal() {
       return this.gamePhase === 'reasoning' && 
-             this.currentReasoningIndex >= Object.keys(this.dialogueFlow.reasoningPhase).length - 2;
+             this.currentReasoningIndex >= this.dialogueFlow.reasoningPhase.examples.length;
     }
   },
 
@@ -344,12 +344,13 @@ export default {
           }, index * 2500); // 每组对话间隔2.5秒
         });
         
-        // 最后显示完成提示
+        // 最后显示完成提示并更新索引
         setTimeout(() => {
           this.chatHistory.push({
             type: 'ai',
             content: this.dialogueFlow.reasoningPhase.completion
           });
+          this.currentReasoningIndex = this.dialogueFlow.reasoningPhase.examples.length;
         }, this.dialogueFlow.reasoningPhase.examples.length * 2500);
       }, 1000);
     },
@@ -588,6 +589,31 @@ button:hover {
   position: fixed;
   bottom: 20px;
   right: 20px;
+  background: linear-gradient(90deg, #00ff88 0%, #00d0ff 100%);
+  border: none;
+  padding: 15px 30px;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  animation: fadeIn 0.5s ease-in-out;
+  box-shadow: 0 4px 15px rgba(0, 208, 255, 0.3);
+}
+
+.next-stage-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 208, 255, 0.4);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes blink {
