@@ -3,6 +3,25 @@
     <ToolBar :toolTypes="toolTypes" />
     <StageHeader stageName="搜查阶段" />
     <div class="map-container" ref="mapContainer">
+      <div class="map-content" ref="mapContent">
+        <img 
+          src="@/assets/map_test.png" 
+          class="map-image" 
+          draggable="false"
+        />
+        <div 
+          class="clue-button" 
+          v-for="(button, index) in clueButtons" 
+          :key="'button-' + index"
+          :style="{ left: button.left, top: button.top }"
+          @click="showClueDialog(button, index)"
+        >
+          {{ button.text }}
+          <div class="badge-count" :class="{ hidden: button.remaining === 0 }">
+            {{ button.remaining }}
+          </div>
+        </div>
+      </div>
       <div class="avatar-list">
         <div 
           class="avatar-item" 
@@ -20,7 +39,7 @@
         </div>
       </div>
       
-      <div class="character-dialog" v-if="showDialog">
+      <div class="character-dialog" v-if="showDialog && currentCharacter">
         <div class="dialog-content">
           <img :src="currentCharacter.avatar" class="dialog-avatar" />
           <div class="dialog-name">{{ currentCharacter.name }}</div>
@@ -30,6 +49,19 @@
           </div>
           <textarea class="dialog-input" placeholder="输入你的问题..."></textarea>
           <button class="dialog-confirm" @click="closeDialog">确认</button>
+          <button class="dialog-close" @click="closeDialog">X</button>
+        </div>
+      </div>
+      
+      <div class="character-dialog" v-if="showDialog && currentClueButton">
+        <div class="dialog-content">
+          <img :src="currentClueButton.clues[currentClueIndex].image" class="dialog-avatar" />
+          <div class="dialog-message">
+            <p>{{ currentClueButton.clues[currentClueIndex].description }}</p>
+          </div>
+          <button class="dialog-confirm" @click="showNextClue">
+            {{ currentClueIndex > 0 ? '下一条线索' : '关闭' }}
+          </button>
           <button class="dialog-close" @click="closeDialog">X</button>
         </div>
       </div>
@@ -77,7 +109,71 @@ export default {
         { name: '林医生', avatar: "", unreadCount: 1 }
       ],
       showDialog: false,
-      currentCharacter: null
+      currentCharacter: null,
+      clueButtons: [
+        { 
+          text: '李小姐的房间', 
+          left: '15%', 
+          top: '60%', 
+          clues: [
+            { image: 'src/assets/watchtest.png', description: '断裂的怀表（时间停在11:05）' },
+            { image: 'src/assets/watchtest.png', description: '书桌上的血迹' }
+          ],
+          remaining: 2
+        },
+        { 
+          text: '王管家的房间', 
+          left: '22%', 
+          top: '26%', 
+          clues: [
+            { image: 'src/assets/watchtest.png', description: '床下的药瓶' },
+            { image: 'src/assets/watchtest.png', description: '衣柜里的衣服' }
+          ],
+          remaining: 2
+        },
+        { 
+          text: '林医生的房间', 
+          left: '72%', 
+          top: '64%', 
+          clues: [
+            { image: 'src/assets/watchtest.png', description: '茶几上的指纹' },
+            { image: 'src/assets/watchtest.png', description: '地毯上的脚印' }
+          ],
+          remaining: 2
+        },
+        { 
+          text: '厨房', 
+          left: '79%', 
+          top: '30%', 
+          clues: [
+            { image: 'src/assets/watchtest.png', description: '砧板上的刀' },
+            { image: 'src/assets/watchtest.png', description: '垃圾桶里的药袋' }
+          ],
+          remaining: 2
+        },
+        { 
+          text: '吴总的房间', 
+          left: '53%', 
+          top: '26%', 
+          clues: [
+            { image: 'src/assets/watchtest.png', description: '折断的树枝' },
+            { image: 'src/assets/watchtest.png', description: '泥土中的脚印' }
+          ],
+          remaining: 2
+        },
+        { 
+          text: '杂物间', 
+          left: '40.5%', 
+          top: '64%', 
+          clues: [
+            { image: 'src/assets/watchtest.png', description: '车钥匙' },
+            { image: 'src/assets/watchtest.png', description: '后备箱的行李' }
+          ],
+          remaining: 2
+        }
+      ],
+      currentClueButton: null,
+      currentClueIndex: 0
     }
   },
   mounted() {
@@ -115,7 +211,7 @@ export default {
       
       // 边界检测
       const containerWidth = this.$refs.mapContainer.offsetWidth
-      const imageWidth = this.$refs.mapImage.offsetWidth
+      const imageWidth = this.$refs.mapContent.offsetWidth
       const maxLeft = 0
       const maxRight = containerWidth - imageWidth
       
@@ -123,16 +219,16 @@ export default {
       let clampedX = newX
       if (newX > maxLeft) {
         clampedX = maxLeft
-        this.showLeftEdge = true
-      } else {
         this.showLeftEdge = false
+      } else {
+        this.showLeftEdge = true
       }
       
       if (newX < maxRight) {
         clampedX = maxRight
-        this.showRightEdge = true
-      } else {
         this.showRightEdge = false
+      } else {
+        this.showRightEdge = true
       }
       
       // 确保在边界内
@@ -143,7 +239,7 @@ export default {
         y: 0
       }
       
-      this.$refs.mapImage.style.transform = `translate(${this.currentPos.x}px, 0)`
+      this.$refs.mapContent.style.transform = `translateX(${this.currentPos.x}px)`
       e.preventDefault()
     },
     endDrag() {
@@ -158,6 +254,19 @@ export default {
     },
     goToReasoningStage() {
       this.$router.push('/game-reasoning-stage');
+    },
+    showClueDialog(button, index) {
+      this.currentClueButton = button
+      this.currentClueIndex = button.clues.length - 1
+      this.showDialog = true
+    },
+    showNextClue() {
+      if (this.currentClueButton && this.currentClueIndex > 0) {
+        this.currentClueIndex--
+        this.currentClueButton.remaining--
+      } else {
+        this.showDialog = false
+      }
     }
   }
 }
@@ -199,39 +308,41 @@ export default {
   position: relative;
   top: 0;
   left: 0;
-  width: 100%;
-  flex: 1;
   overflow: hidden;
 }
 
-.map-image {
-  position: absolute;
+.map-content {
+  width: fit-content;
   height: 100%;
-  user-select: none;
   will-change: transform;
   touch-action: none;
+  white-space: nowrap;
+}
+
+.map-image {
+  width: auto;
+  height: 100%;
 }
 
 .edge-indicator {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 40px;
+  width: 20px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: rgba(0,0,0,0.3);
-  border-radius: 50%;
-  z-index: 10;
+  z-index: 1000;
 }
 
 .edge-indicator.left {
-  left: 10px;
+  left: 0;
 }
 
 .edge-indicator.right {
-  right: 10px;
+  right: 0;
 }
 
 .avatar-list {
@@ -278,6 +389,21 @@ export default {
   justify-content: center;
   align-items: center;
   z-index: 100;
+}
+
+.clue-button {
+  position: absolute;
+  background-color: var(--accent-light);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-width: 80px;
 }
 
 .dialog-content {

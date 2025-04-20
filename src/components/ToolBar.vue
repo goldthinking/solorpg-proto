@@ -256,8 +256,7 @@ const closePanel = () => {
 .toolbar-container {
   position: fixed;
   right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 56px;
   width: 300px;
   background: rgba(0, 0, 0, 0.4);
   color: white;
