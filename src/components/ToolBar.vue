@@ -136,15 +136,13 @@ const activeClueTab = ref('clue')
 const toolIcons = {
   script: 'mdi:book',
   clue: 'mdi:magnify',
-  note: 'mdi:note-text',
-  ai: 'mdi:robot'
+  note: 'mdi:note-text'
 }
 
 const toolLabels = {
   script: '剧本',
   clue: '线索',
-  note: '笔记',
-  ai: 'AI问答'
+  note: '笔记'
 }
 
 // 数据
@@ -288,7 +286,7 @@ const closePanel = () => {
 }
 
 .toolbar-container.collapsed .main-tools {
-  padding-left:0;
+  padding-left: 10;
 }
 
 .tool-item {
@@ -308,10 +306,6 @@ const closePanel = () => {
   font-size: 0.9rem;
   text-align: center;
   line-height: 1.2;
-}
-
-.tool-item:hover {
-  background: rgba(255, 255, 255, 0.1);
 }
 
 .detail-panel {
@@ -379,10 +373,6 @@ const closePanel = () => {
   height: auto;
   object-fit: contain;  /* 保持图片比例 */
   border: 2px solid transparent;
-}
-
-.clue-item:hover {
-  transform: scale(1.05);
 }
 
 .clue-item.active img { /* 选中状态 */

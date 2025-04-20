@@ -65,7 +65,7 @@ export default {
   },
   data() {
     return {
-      toolTypes: ['script', 'clue', 'character', 'note'],
+      toolTypes: ['script', 'clue', 'note'],
       isDragging: false,
       startPos: { x: 0, y: 0 },
       currentPos: { x: 0, y: 0 },

@@ -108,7 +108,7 @@ export default {
       gamePhase: 'init',
       remainingQuestions: 5,
       currentReasoningIndex: 0,
-      toolTypes: ['script', 'clue', 'character', 'note'],
+      toolTypes: ['script', 'clue', 'note'],
       chatHistory: [],
       playerAnswer: '',
       dialogueFlow: {
