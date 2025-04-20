@@ -95,6 +95,7 @@
 import ToolBar from "@/components/ToolBar.vue";
 import StageHeader from "@/components/StageHeader.vue";
 
+import router from "@/router";
 export default {
   name: 'GameReasoningStageView',
   components: {
@@ -556,10 +557,6 @@ button {
   gap: 8px;
   margin-top: 10px;
   transition: transform 0.2s;
-}
-
-button:hover {
-  transform: translateY(-2px);
 }
 
 .phase-buttons {

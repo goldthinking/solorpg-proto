@@ -13,6 +13,7 @@
 <script>
 import ToolBar from "@/components/ToolBar.vue";
 import StageHeader from "@/components/StageHeader.vue";
+import router from "@/router";
 export default {
   name: 'GameScriptStageView',
   components: {
@@ -35,7 +36,7 @@ export default {
   },
   methods: {
     goToSearchStage() {
-      this.$router.push('/game-search-stage');
+      router.push('/game-search-stage');
     }
   }
 }
