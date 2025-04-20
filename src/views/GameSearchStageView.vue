@@ -57,7 +57,6 @@
 <script>
 import ToolBar from "@/components/ToolBar.vue";
 import StageHeader from "@/components/StageHeader.vue";
-import router from "@/router";
 export default {
   name: 'GameSearchStageView',
   components: {
@@ -158,7 +157,7 @@ export default {
       this.showDialog = false
     },
     goToReasoningStage() {
-      router.push('/game-reasoning-stage');
+      this.$router.push('/game-reasoning-stage');
     }
   }
 }

@@ -371,7 +371,7 @@ export default {
     },
 
     goToRevealStage() {
-      this.$router.push({ name: 'game-reveal-stage' });
+      this.$router.push('/game-reveal-stage');
     }
   },
 

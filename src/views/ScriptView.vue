@@ -41,6 +41,7 @@
 <script>
 import TabBar from '@/components/TabBar.vue'
 import DifficultyTag from '@/components/DifficultyTag.vue'
+import router from '@/router'
 
 export default {
   name: 'ScriptView',
@@ -134,7 +135,7 @@ export default {
   },
   methods: {
     goToScriptDetail() {
-      this.$router.push('/script-detail')
+      router.push({ name: 'script-detail' })
     }
   }
 }
