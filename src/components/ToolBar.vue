@@ -6,11 +6,6 @@
       'detail-view': activePanel
     }"
   >
-    <!-- 折叠按钮 -->
-    <div class="toggle-button" @click="toggleToolbar">
-      <Icon :icon="isExpanded ? 'mdi:chevron-right' : 'mdi:chevron-left'" />
-    </div>
-
     <!-- 主工具栏 -->
     <div class="main-tools" v-if="!activePanel">
       <div
@@ -43,28 +38,65 @@
       </div>
     </div>
 
-    <!-- 线索详情 -->
+    <!-- 线索图文和Ai问答详情 -->
     <div v-if="activePanel === 'clue'" class="detail-panel">
-      <div class="clue-list">
+      <div class="clueAndai" >
         <div
-            v-for="clue in clues"
-            :key="clue.id"
-            class="clue-item"
-            @click="activeClue = clue.id"
+            class="tab-item"
+            :class="{ active: activeClueTab === 'clue' }"
+            @click="activeClueTab = 'clue'"
         >
-          <img :src="clue.thumbnail" alt="线索缩略图">
+          线索
+        </div>
+        <!-- AI对话选项卡 -->
+        <div
+            class="tab-item"
+            :class="{ active: activeClueTab === 'ai' }"
+            @click="activeClueTab = 'ai'"
+        >
+          AI对话
         </div>
       </div>
-      <div class="clue-detail" v-if="activeClue">
-        <img :src="activeClueData.image" alt="线索大图">
-        <p>{{ activeClueData.description }}</p>
-        <button class="close-btn" @click="activeClue = null">← 返回列表</button>
+
+      <div v-if="activeClueTab === 'clue'" class="clue-container">
+        <!-- 左侧缩略图列 -->
+        <div class="clue-thumbnails">
+          <div
+              v-for="clue in clues"
+              :key="clue.id"
+              class="clue-item"
+              @click="activeClue = clue.id"
+          >
+            <img
+                :src="clue.thumbnail"
+                alt="线索缩略图"
+            >
+          </div>
+        </div>
+        <!-- 右侧详情区域 -->
+        <div class="clue-detail" v-if="activeClue">
+          <img :src="activeClueData.image" alt="线索大图">
+          <p>{{ activeClueData.description }}</p>
+        </div>
+      </div>
+
+      <div v-if="activeClueTab === 'ai'" class="chat-container">
+          <div
+              v-for="(log, index) in aiLogs"
+              :key="index"
+              :class="['message', log.type]"
+          >
+            <div class="avatar">
+              <Icon :icon="log.type === 'user' ? 'mdi:account' : 'mdi:robot'" />
+            </div>
+            <div class="content">{{ log.content }}</div>
+          </div>
       </div>
       <button class="close-btn" @click="closePanel">×</button>
     </div>
 
-    <!-- AI问答 -->
-    <div v-if="activePanel === 'ai'" class="detail-panel">
+    <!-- 笔记 -->
+    <div v-if="activePanel === 'note'" class="detail-panel">
       <div class="chat-container">
         <div
             v-for="(log, index) in aiLogs"
@@ -80,6 +112,7 @@
       <button class="close-btn" @click="closePanel">×</button>
     </div>
   </div>
+
 </template>
 
 <script setup>
@@ -90,7 +123,7 @@ const props = defineProps({
   toolTypes: {
     type: Array,
     required: true,
-    default: () => ['script', 'clue', 'character', 'note']
+    default: () => ['script', 'clue', 'note']
   }
 })
 
@@ -98,11 +131,11 @@ const isExpanded = ref(false)
 const activePanel = ref(null)
 const activeChapter = ref(1)
 const activeClue = ref(null)
+const activeClueTab = ref('clue')
 
 const toolIcons = {
   script: 'mdi:book',
   clue: 'mdi:magnify',
-  character: 'mdi:account-group',
   note: 'mdi:note-text',
   ai: 'mdi:robot'
 }
@@ -110,23 +143,89 @@ const toolIcons = {
 const toolLabels = {
   script: '剧本',
   clue: '线索',
-  character: '人物',
   note: '笔记',
   ai: 'AI问答'
 }
 
-// 数据示例
+// 数据
 const chapters = ref([
-  { id: 1, title: '第一章 案发当日', content: '2023年10月1日晚，别墅内...' },
-  { id: 2, title: '第二章 时间疑点', content: '根据法医鉴定结果...' }
+  {
+    id: 1,
+    title: '第一章 案发当日',
+    content: `2023年10月1日23:17，警方接到报案称青松别墅发生命案。抵达现场时发现：
+    - 死者：林氏集团总裁林国栋（52岁）
+    - 姿势：仰卧在书房地毯上，右手紧握金色怀表
+    - 致命伤：后脑钝器击打（凶器未发现）
+    - 异常状况：书房保险柜开启，重要文件散落
+    - 关键物证：窗台外侧发现的半枚带血迹指纹`
+  },
+  {
+    id: 2,
+    title: '第二章 时间谜团',
+    content: `法医报告显示：
+    - 死亡时间：当日21:30-22:30
+    - 胃内容物检测出微量巴比妥类药物
+    - 怀表停摆时间：23:05（明显晚于死亡时间）
+
+矛盾点：
+    ① 管家证词称22:45最后一次见到活着的死者
+    ② 监控显示21:50后无人进出别墅
+    ③ 死者手表停留在22:15`
+  },
+  {
+    id: 3,
+    title: '第三章 暗流涌动',
+    content: `主要关系人陈述：
+    ▶ 林太太（苏婉蓉，45岁）：
+    - 案发时在琴房练习《月光奏鸣曲》
+    - 近期正协议离婚
+    - 被目击案发前日与私人律师密谈
+
+    ▶ 养子林枫（28岁）：
+    - 案发后手机定位显示在城南酒吧
+    - 两周前被取消遗产继承权
+    - 书房发现其撕毁的借条（金额2000万）`
+  },
+  {
+    id: 4,
+    title: '第四章 血色往事',
+    content: `旧案关联：
+    ■ 20年前青松别墅前主人周氏灭门案
+    - 相似特征：同款金色怀表出现现场
+    - 未解之谜：周家长子下落不明
+
+   新发现：
+    - 林国栋书桌暗格内的老照片：
+      ▷ 五人合影（其中三人被红笔划去）
+      ▷ 背面标注日期：2003.7.15
+      ▷ 右下角潦草字迹："该偿还了"`
+  },{
+    id: 5,
+    title: '第四章 血色往事',
+    content: `旧案关联：
+    ■ 20年前青松别墅前主人周氏灭门案
+    - 相似特征：同款金色怀表出现现场
+    - 未解之谜：周家长子下落不明
+
+   新发现：
+    - 林国栋书桌暗格内的老照片：
+      ▷ 五人合影（其中三人被红笔划去）
+      ▷ 背面标注日期：2003.7.15
+      ▷ 右下角潦草字迹："该偿还了"`
+  }
 ])
 
 const clues = ref([
   {
     id: 1,
     description: '断裂的怀表（时间停在11:05）',
-    image: '/clues/clue1-full.jpg',
-    thumbnail: '/clues/clue1-thumb.jpg'
+    image: 'src/assets/watchtest.png',
+    thumbnail: 'src/assets/watchtest.png'
+  },{
+    id: 2,
+    description: '断裂的怀表',
+    image: 'src/assets/watchtest.png',
+    thumbnail: 'src/assets/watchtest.png'
   }
 ])
 
@@ -143,14 +242,9 @@ const activeClueData = computed(() =>
     clues.value.find(c => c.id === activeClue.value) || {}
 )
 
-const toggleToolbar = () => {
-  if (!activePanel.value) {
-    isExpanded.value = !isExpanded.value
-  }
-}
 
 const openPanel = (type) => {
-  isExpanded.value = true
+  isExpanded.value = false
   activePanel.value = type
 }
 
@@ -176,7 +270,7 @@ const closePanel = () => {
 }
 
 .toolbar-container.collapsed {
-  width: 36px;
+  width: 40px;
   margin-left:0;
 }
 
@@ -187,21 +281,10 @@ const closePanel = () => {
   transform: translateY(-50%);
 }
 
-.toggle-button {
-  position: absolute;
-  left: -40px;
-  top: 10px;
-  cursor: pointer;
-  padding: 10px;
-  background: #2c3e50;
-  border-radius: 5px 0 0 5px;
-}
 
 .main-tools {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  padding: 15px 10px; /* 调整内边距 */
+  gap: 15px;
 }
 
 .toolbar-container.collapsed .main-tools {
@@ -210,12 +293,21 @@ const closePanel = () => {
 
 .tool-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
+  gap: 8px;
   cursor: pointer;
-  padding: 10px;
+  padding: 15px 10px;
   border-radius: 8px;
   transition: all 0.2s;
+}
+
+
+.tool-label {
+  font-size: 0.9rem;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .tool-item:hover {
@@ -232,50 +324,88 @@ const closePanel = () => {
   display: flex;
   gap: 10px;
   margin-bottom: 20px;
+  white-space: nowrap; /* 文本不会换行，文本会在同一行上继续 */
+  overflow-x: auto;
 }
 
 .tab-item {
-  padding: 10px 20px;
-  border-radius: 5px;
+  padding: 10px 10px;
+  border-radius: 4px;
   cursor: pointer;
   background: rgba(255, 255, 255, 0.1);
+  text-align: center;
+  margin-top: 10px;
+
 }
 
 .tab-item.active {
-  background: #42b983;
+  background: #776ad8;
   font-weight: bold;
 }
 
 .chapter-content {
   line-height: 1.6;
 }
+.clueAndai {
+  display: flex;
+  gap: 10px
+}
 
-.clue-list {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
+.clue-container {
+  display: flex;
+  gap: 20px; /* 控制左右间距 */
+  height: 80vh; /* 根据需要设置容器高度 */
+}
+
+.clue-thumbnails {
+  display: flex;
+  flex-direction: column; /* 纵向排列 */
+  gap: 10px; /* 缩略图间距 */
+  overflow-y: auto; /* 添加垂直滚动条 */
+  width: 50px; /* 左侧列宽度 */
+  padding: 10px;
+  background: rgba(245, 245, 245, 0); /* 可选背景色 */
+}
+
+.clue-item {
+  cursor: pointer;
+  transition: transform 0.2s;
+  width: 50px; /* 固定缩略图宽度 */
+  height: 50px; /* 固定缩略图高度 */
 }
 
 .clue-item img {
-  width: 100%;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: transform 0.3s;
+  width: 80%;
+  height: auto;
+  object-fit: contain;  /* 保持图片比例 */
+  border: 2px solid transparent;
 }
 
-.clue-item:hover img {
+.clue-item:hover {
   transform: scale(1.05);
 }
 
-.clue-detail img {
-  max-width: 100%;
-  max-height: 400px;
-  margin-bottom: 20px;
+.clue-item.active img { /* 选中状态 */
+  border-color: #776ad8;
 }
 
+/* 如果需要限制最大高度 */
+.clue-detail img {
+  margin-top: 20px;
+  max-height: 400px; /* 根据需求调整 */
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .clue-detail {
+    width: 200px;
+    min-width: 180px;
+  }
+}
+
+
 .chat-container {
+  margin-top: 20px;
   height: calc(100% - 50px);
   overflow-y: auto;
 }
