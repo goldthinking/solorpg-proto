@@ -3,55 +3,98 @@
     <ToolBar :toolTypes="toolTypes" />
     <StageHeader stageName="推理阶段" />
     
-    <!-- 提示灯泡 -->
-    <div class="hint-button" @click="showHint">
-      <i class="fas fa-lightbulb"></i>
-      <div class="hint-popup" v-show="showHintPopup">
-        <div class="hint-content">
-          <h3>提示</h3>
-          <p>{{ currentHint }}</p>
-          <button @click="closeHint">关闭</button>
-        </div>
-      </div>
-    </div>
-
     <div class="dialogue-section">
-      <!-- 对话框 -->
-      <div class="chat-box">
-        <div v-for="(message, index) in chatHistory" :key="index" class="chat-message" :class="message.type">
-          <p v-html="message.content"></p>
+      <div class="comm-device">
+        <!-- 保持设备头部不变 -->
+        <div class="device-header">
+          <div class="status-bar">
+            <span class="connection">已连接 - 特别调查局通讯网络</span>
+            <span class="encryption">加密通讯中...</span>
+          </div>
+        </div>
+        
+        <div class="chat-box">
+          <div v-for="(message, index) in chatHistory" 
+               :key="index" 
+               class="chat-message" 
+               :class="message.type">
+            <!-- AI消息模板 -->
+            <template v-if="message.type === 'ai'">
+              <div class="avatar ai-avatar">
+                <img src="/images/avatar-c.png" alt="C君">
+                <span class="name">助手</span>
+              </div>
+              <div class="message-content ai-message">
+                <p v-html="message.content"></p>
+              </div>
+            </template>
+            <!-- 玩家消息模板 -->
+            <template v-else>
+              <div class="message-content player-message">
+                <p v-html="message.content"></p>
+              </div>
+              <div class="avatar player-avatar">
+                <img src="/images/avatar-d.jpg" alt="D调查员">
+                <span class="name">调查员D</span>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- 初始选择按钮 -->
+        <div v-if="!gameStarted" class="initial-buttons">
+          <button @click="startInitialReasoning" class="phase-btn">
+            开始线索归档
+          </button>
+          <button @click="startInitialSearch" class="phase-btn">
+            案件疑问探查
+          </button>
+        </div>
+
+        <!-- 游戏开始后的输入区域 -->
+        <div v-else>
+          <div class="player-response">
+            <textarea v-model="playerAnswer" 
+                      placeholder="输入调查报告内容..." 
+                      @keyup.ctrl.enter="submitAnswer">
+            </textarea>
+            <button @click="submitAnswer">
+              <i class="fas fa-paper-plane"></i>
+              发送报告
+            </button>
+          </div>
         </div>
       </div>
-
-      <!-- 玩家回答区域 -->
-      <div class="player-response">
-        <textarea v-model="playerAnswer" placeholder="请输入你的回答..."></textarea>
-        <button @click="submitAnswer">发送</button>
-      </div>
     </div>
 
-    <!-- 线索库 -->
-    <div class="clue-library" v-if="clues.length">
-      <h3>线索库</h3>
-      <ul>
-        <li v-for="(clue, index) in clues" :key="index"><strong>{{ clue }}</strong></li>
-      </ul>
-    </div>
-
-    <!-- 添加导航按钮 -->
-    <div class="navigation-buttons" v-if="isChapterComplete">
-      <button class="next-stage-btn" @click="goToSearchStage">
-        进入搜查阶段
+    <!-- 阶段转换按钮 -->
+    <div v-if="gameStarted" class="phase-buttons">
+      <button v-if="gamePhase === 'search'" 
+              @click="startReasoning" 
+              class="phase-btn">
+        没什么疑问了，进行现阶段线索归档吧
+      </button>
+      <button v-if="gamePhase === 'reasoning'" 
+              @click="backToSearch" 
+              :disabled="remainingQuestions === 0"
+              class="phase-btn">
+        我还有一些疑惑，你帮我搜一下
       </button>
     </div>
-    <ToolBar :items="allTools" />
-    <button class="next-stage-btn" @click="goToRevealStage">推理完成，开始揭秘</button>
+
+    <!-- 揭秘按钮 -->
+    <div class="reveal-button-container" v-if="canProceedToReveal">
+      <button class="next-stage-btn" @click="goToRevealStage">
+        查看完整案情
+      </button>
+    </div>
   </div>
 </template>
 
 <script>
 import ToolBar from "@/components/ToolBar.vue";
 import StageHeader from "@/components/StageHeader.vue";
+
 import router from "@/router";
 export default {
   name: 'GameReasoningStageView',
@@ -61,150 +104,292 @@ export default {
   },
   data() {
     return {
+      gameStarted: false,
+      gamePhase: 'init',
+      remainingQuestions: 5,
+      currentReasoningIndex: 0,
       toolTypes: ['script', 'clue', 'character', 'note'],
-      questions: [
-        "作为警方调查员，你认为这个雪夜里谁最有可能进入死者的房间？为什么？",
-        "李小姐声称整晚都在房间，但王管家说看见她在走廊徘徊。请分析两人的证词，并说明谁更可信。",
-        "林医生发现死者遗体上有一些特殊痕迹，你觉得这些痕迹说明了什么？"
-      ],
-      currentQuestionIndex: 0,
-      playerAnswer: '',
       chatHistory: [],
-      showHintPopup: false,
-      isChapterComplete: false,
-      answerAttempts: 0, // 记录当前问题的回答次数
-      clues: [],
-      hints: [
-        "【答题要点】\n1. 分析雪地上的足迹情况\n2. 考虑各个嫌疑人的行动轨迹\n3. 提到雪夜和进出房间的时间线",
-        "【答题要点】\n1. 分析李小姐和王管家的动机\n2. 结合两人的性格特点\n3. 提供支持你判断的具体理由",
-        "【答题要点】\n1. 根据林医生的描述分析痕迹特征\n2. 推测可能的致伤工具\n3. 联系案发现场的其他线索"
-      ]
-    };
-  },
-  computed: {
-    currentQuestion() {
-      return this.questions[this.currentQuestionIndex] || null;
-    },
-    currentHint() {
-      return this.hints[this.currentQuestionIndex] || "暂无提示";
+      playerAnswer: '',
+      dialogueFlow: {
+        initial: {
+          content: "对这个案件有头绪了吗，那我们进行线索归档吧！如果还有任何疑惑，我可以偷偷贿赂Adam查一查哦？"
+        },
+        searchPhase: {
+          opening: "D sir，我给管档案的Adam上供了5瓶胡椒博士，他松口说我们可以查5个问题，你有什么要搜的吗？",
+          outOfQuestions: "不行不行，Adam黑脸了，我先溜了^^",
+          responses: {
+            isOut: "是！完全被你看穿了！",
+            notSuicide: "否。D sir再仔细想想吧！",
+            irrelevant: "欸？好像与此无关吧……"
+          },
+          // 添加示例对话
+          examples: [
+            {
+              question: "李小姐昨天夜里不在房间里吧？",
+              answer: "是！完全被你看穿了！",
+              type: "isOut"
+            },
+            {
+              question: "助手喜欢喝胡椒博士吗？",
+              answer: "欸？好像与此无关吧……",
+              type: "irrelevant"
+            },
+            {
+              question: "死者是自杀吗？",
+              answer: "否。D sir再仔细想想吧！",
+              type: "notSuicide"
+            }
+          ]
+        },
+        reasoningPhase: {
+          opening: "让我们开始线索归档吧！我会根据你的分析记录重要线索。",
+          examples: [
+            {
+              question: "这个雪夜里谁最有可能进入死者的房间？为什么？",
+              wrongAnswer: "李小姐吧。她说谎了，明明在晚上出过门。",
+              correctAnswer: "分析足迹和时间线，应该是管家。雪地上有新鲜足迹通向死者房间，而且根据时间线管家是最后见到死者的人。",
+              response: "这个推理很有道理！【记录中.jpg】根据足迹和时间线确实能得出这个结论。",
+              keywords: ['足迹', '雪地', '时间', '行动']
+            },
+            {
+              question: "李小姐和王管家的证词冲突，谁更可信？",
+              playerAnswer: "王管家的说法更可信。因为李小姐与死者有经济纠纷且性格冲动，而王管家是老员工，性格稳重没有作案动机。",
+              response: "没错！分析人物关系和动机很重要。",
+              keywords: ['动机', '性格', '证词', '关系']
+            },
+            {
+              question: "法医发现的痕迹说明了什么？",
+              playerAnswer: "死者遗体上的勒痕和现场工具痕迹显示是用细绳作案，而且在死者脖子上还发现了特殊纤维残留。",
+              response: "完全正确！看来D sir已经完全理清了案情。准备好查看完整案情了吗？",
+              keywords: ['痕迹', '工具', '现场', '证据']
+            }
+          ],
+          completion: "这种难度的案子对D sir简直是信手拈来嘛，线索都归档完毕了，我们来看看完整案情吧~"
+        }
+      }
     }
   },
-  mounted() {
-    // 初始显示第一个问题
-    this.chatHistory.push({ type: 'ai', content: this.currentQuestion });
+  
+  computed: {
+    canProceedToReveal() {
+      return this.gamePhase === 'reasoning' && 
+             this.currentReasoningIndex >= this.dialogueFlow.reasoningPhase.examples.length;
+    }
   },
+
   methods: {
-    closeHint() {
-      this.showHintPopup = false;
+    startInitialReasoning() {
+      this.gameStarted = true;
+      this.gamePhase = 'reasoning';
+      this.startReasoning();
     },
-    
+
+    startInitialSearch() {
+      this.gameStarted = true;
+      this.gamePhase = 'search';
+      
+      // 显示开场白
+      this.chatHistory.push({
+        type: 'ai',
+        content: this.dialogueFlow.searchPhase.opening
+      });
+      
+      // 添加一个短暂延迟后显示示例对话
+      setTimeout(() => {
+        // 为每个示例创建一问一答的对话
+        this.dialogueFlow.searchPhase.examples.forEach((example, index) => {
+          setTimeout(() => {
+            // 添加问题
+            this.chatHistory.push({
+              type: 'player',
+              content: example.question
+            });
+            
+            // 添加回答
+            setTimeout(() => {
+              this.chatHistory.push({
+                type: 'ai',
+                content: example.answer
+              });
+            }, 500);
+          }, index * 1500); // 每组对话间隔1.5秒
+        });
+      }, 1000);
+    },
+
     async submitAnswer() {
-      if (!this.playerAnswer.trim()) {
-        alert("回答不能为空！");
-        return;
-      }
+      if (!this.playerAnswer.trim()) return;
 
-      // 添加玩家回答到对话历史
-      this.chatHistory.push({ type: 'player', content: this.playerAnswer });
+      this.chatHistory.push({ 
+        type: 'player', 
+        content: this.playerAnswer 
+      });
 
-      // 获取 AI 反馈
-      const feedback = await this.getAiFeedback(this.playerAnswer);
-      this.chatHistory.push({ type: 'ai', content: feedback.comment });
-
-      // 提取线索并加入线索库
-      if (feedback.clues && feedback.clues.length > 0) {
-        feedback.clues.forEach((clue) => {
-          if (!this.clues.includes(clue)) {
-            this.clues.push(clue);
-          }
-        });
-      }
-
-      // 根据评分决定是否进入下一题
-      if (feedback.score >= 70 || this.answerAttempts >= 2) {
-        if (this.currentQuestionIndex < this.questions.length - 1) {
-          this.currentQuestionIndex++;
-          this.answerAttempts = 0;
-          this.chatHistory.push({ type: 'ai', content: this.questions[this.currentQuestionIndex] });
-        } else {
-          this.isChapterComplete = true;
-          this.chatHistory.push({ type: 'ai', content: "恭喜你完成了推理阶段！让我们继续下一步。" });
-        }
+      if (this.gamePhase === 'search') {
+        await this.handleSearchPhase();
       } else {
-        this.answerAttempts++;
-        this.chatHistory.push({ 
-          type: 'ai', 
-          content: "让我们再深入思考一下。你可以考虑：" + this.hints[this.currentQuestionIndex] 
-        });
+        await this.handleReasoningPhase();
       }
       
       this.playerAnswer = '';
-    },
-
-    getAiFeedback(answer) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const score = this.evaluateAnswer(answer);
-          let feedback = this.generateFeedback(score, answer);
-          
-          resolve({
-            score: score,
-            comment: feedback
-          });
-        }, 1000);
+      
+      // 自动滚动到底部
+      this.$nextTick(() => {
+        const chatBox = document.querySelector('.chat-box');
+        chatBox.scrollTop = chatBox.scrollHeight;
       });
     },
 
-    evaluateAnswer(answer) {
-      const scorePoints = {
-        question0: ['足迹', '雪地', '时间', '行动'],
-        question1: ['动机', '性格', '证词', '关系'],
-        question2: ['痕迹', '工具', '现场', '证据']
-      };
+    async handleSearchPhase() {
+      if (this.remainingQuestions > 0) {
+        const response = this.getSearchResponse(this.playerAnswer);
+        this.chatHistory.push({
+          type: 'ai',
+          content: response
+        });
+        this.remainingQuestions--;
+      } else {
+        this.chatHistory.push({
+          type: 'ai',
+          content: this.dialogueFlow.searchPhase.outOfQuestions
+        });
+      }
+    },
+
+    async handleReasoningPhase() {
+      const currentQuestion = this.dialogueFlow.reasoningPhase.examples[this.currentReasoningIndex];
       
-      const currentKeywords = scorePoints[`question${this.currentQuestionIndex}`];
-      const foundKeywords = currentKeywords.filter(keyword => answer.includes(keyword));
+      // 如果是第一题的错误答案
+      if (this.currentReasoningIndex === 0 && 
+          this.playerAnswer.includes("李小姐")) {
+        this.chatHistory.push({
+          type: 'ai',
+          content: currentQuestion.wrongAnswer
+        });
+        return;
+      }
       
-      // 需要至少包含3个关键词才能通过
+      const score = this.evaluateAnswer(this.playerAnswer, currentQuestion.keywords);
+      if (score >= 75) {
+        this.chatHistory.push({
+          type: 'ai',
+          content: currentQuestion.response
+        });
+        
+        if (this.currentReasoningIndex < 2) {
+          this.currentReasoningIndex++;
+          setTimeout(() => {
+            this.chatHistory.push({
+              type: 'ai',
+              content: this.dialogueFlow.reasoningPhase.examples[this.currentReasoningIndex].question
+            });
+          }, 1000);
+        } else {
+          this.chatHistory.push({
+            type: 'ai',
+            content: this.dialogueFlow.reasoningPhase.completion
+          });
+        }
+      } else {
+        this.chatHistory.push({
+          type: 'ai',
+          content: "请再仔细思考一下~"
+        });
+      }
+    },
+
+    startReasoning() {
+      this.gamePhase = 'reasoning';
+      this.chatHistory.push({
+        type: 'ai',
+        content: this.dialogueFlow.reasoningPhase.opening
+      });
+      
+      // 添加示例对话
+      setTimeout(() => {
+        this.dialogueFlow.reasoningPhase.examples.forEach((example, index) => {
+          setTimeout(() => {
+            // 显示问题
+            this.chatHistory.push({
+              type: 'ai',
+              content: example.question
+            });
+            
+            // 显示玩家示例回答
+            setTimeout(() => {
+              this.chatHistory.push({
+                type: 'player',
+                content: example.playerAnswer || example.correctAnswer
+              });
+              
+              // 显示助手回应
+              setTimeout(() => {
+                this.chatHistory.push({
+                  type: 'ai',
+                  content: example.response
+                });
+              }, 800);
+            }, 800);
+          }, index * 2500); // 每组对话间隔2.5秒
+        });
+        
+        // 最后显示完成提示并更新索引
+        setTimeout(() => {
+          this.chatHistory.push({
+            type: 'ai',
+            content: this.dialogueFlow.reasoningPhase.completion
+          });
+          this.currentReasoningIndex = this.dialogueFlow.reasoningPhase.examples.length;
+        }, this.dialogueFlow.reasoningPhase.examples.length * 2500);
+      }, 1000);
+    },
+
+    backToSearch() {
+      if (this.remainingQuestions > 0) {
+        this.gamePhase = 'search';
+        this.chatHistory.push({
+          type: 'ai',
+          content: `还可以问${this.remainingQuestions}个问题，你想知道什么？`
+        });
+      }
+    },
+
+    getSearchResponse(question) {
+      if (question.includes("李小姐") && question.includes("房间")) {
+        return this.dialogueFlow.searchPhase.responses.isOut;
+      }
+      if (question.includes("自杀")) {
+        return this.dialogueFlow.searchPhase.responses.notSuicide;
+      }
+      return this.dialogueFlow.searchPhase.responses.irrelevant;
+    },
+
+    evaluateAnswer(answer, keywords) {
+      const foundKeywords = keywords.filter(keyword => answer.includes(keyword));
       return Math.min(foundKeywords.length * 25, 100);
     },
 
-    generateFeedback(score, answer) {
-      const keywords = this.extractKeywords(answer);
-      let feedback = '<div class="feedback">';
-      
-      if (score >= 75) {
-        feedback += `<p>分析很到位！你提到了<strong>${keywords.join('</strong>、<strong>')}</strong>这些重要线索。</p>
-                    <p class="score-hint">✓ 已达到进入下一题的要求</p>`;
-      } else {
-        feedback += `<p>推理中提到了<strong>${keywords.join('</strong>、<strong>')}</strong>，但还需要：</p>
-                    <p class="score-hint">✗ 至少需要提到3个关键要素才能进入下一题：${this.hints[this.currentQuestionIndex]}</p>`;
-      }
-
-      return feedback + '</div>';
-    },
-
-    extractKeywords(answer) {
-      const keywords = ['动机', '性格', '行为', '关系', '证据'];
-      return keywords.filter(keyword => answer.includes(keyword));
-    },
-
-    goToSearchStage() {
-      this.$router.push('/game-search-stage');
-    },
-    showHint() {
-      this.showHintPopup = !this.showHintPopup;
-    },
-    goToRevealStage(e) {
-      router.push('/game-reveal-stage');
-      e.stopPropagation();
+    goToRevealStage() {
+      this.$router.push({ name: 'game-reveal-stage' });
     }
+  },
+
+  mounted() {
+    // 初始化时只显示开场白
+    this.chatHistory.push({ 
+      type: 'ai', 
+      content: this.dialogueFlow.initial.content
+    });
+    
+    // 其他状态保持为初始值
+    this.gameStarted = false;
+    this.gamePhase = 'init';
   }
-};
+}
 </script>
 
 <style scoped>
-/* 修改背景色为统一风格 */
 .game-reasoning-stage-view {
   padding: 20px;
   padding-top: calc(20px + var(--stage-header-height));
@@ -215,202 +400,348 @@ export default {
   margin: 0 auto;
 }
 
-/* 添加提示灯泡样式 */
-.hint-button {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  cursor: pointer;
-  z-index: 100;
+.comm-device {
+  background: linear-gradient(180deg, #1a1f35 0%, #2a2f45 100%);
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 0 30px rgba(0, 150, 255, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
-.hint-button i {
-  font-size: 24px;
-  color: #ffd700;
-  text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
-  transition: all 0.3s ease;
+.device-header {
+  border-bottom: 1px solid rgba(0, 150, 255, 0.2);
+  padding-bottom: 10px;
+  margin-bottom: 15px;
 }
 
-.hint-button:hover i {
-  color: #ffed4a;
-  transform: scale(1.1);
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  color: #00d0ff;
+  font-size: 12px;
+  font-family: 'Monaco', monospace;
 }
 
-.hint-popup {
-  position: absolute;
-  top: 40px;
-  right: 0;
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-  width: 250px;
-  z-index: 101;
+.connection::before {
+  content: "●";
+  color: #00ff88;
+  margin-right: 5px;
 }
 
-.hint-content {
-  text-align: left;
+.encryption {
+  animation: blink 1.5s infinite;
 }
 
-.hint-content h3 {
-  margin-top: 0;
-  color: #333;
-  margin-bottom: 10px;
-}
-
-.hint-content p {
-  margin: 10px 0;
-  color: #666;
-  line-height: 1.5;
-}
-
-.hint-content button {
-  background-color: #ddd;
-  color: #333;
-  padding: 5px 10px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  margin-top: 10px;
-}
-
-.dialogue-section {
-  margin-top: 20px;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
+/* 聊天框基础样式 */
 .chat-box {
   max-height: 400px;
   overflow-y: auto;
-  border: 1px solid #ccc;
-  border-radius: 8px;
   padding: 15px;
-  background-color: #ffffff;
   margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
+/* 消息容器样式 */
 .chat-message {
-  margin-bottom: 15px;
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 12px;
+  max-width: 80%;  /* 控制消息最大宽度 */
+}
+
+/* 玩家消息样式 */
+.chat-message.player {
+  flex-direction: row;  /* 改回正向布局 */
+  justify-content: flex-end;  /* 靠右对齐 */
+  margin-left: auto;    /* 让整体靠右 */
+  width: 85%;          /* 控制整体宽度 */
+}
+
+/* AI消息样式 */
+.chat-message.ai {
+  padding-right: 20%;
+  width: 85%;                /* 控制整体宽度 */
+  align-self: flex-start;  /* 靠左对齐 */
+}
+
+/* 头像样式 */
+.avatar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 60px;  /* 固定头像容器宽度 */
+}
+
+.avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #00d0ff;
+  box-shadow: 0 0 10px rgba(0, 208, 255, 0.3);
+  object-fit: cover;
+}
+
+.avatar .name {
+  font-size: 12px;
+  color: #00d0ff;
+  margin-top: 4px;
+}
+
+/* 消息气泡样式 */
+.message-content {
   padding: 12px;
   border-radius: 10px;
-  max-width: 70%;
-  word-wrap: break-word;
+  color: #fff;
+  max-width: calc(100% - 80px);  /* 减去头像和间距的宽度 */
+  word-break: break-word;
 }
 
-.chat-message.player {
-  background-color: #95ec69;
-  color: #000000;
-  margin-left: auto;
+/* AI消息气泡 */
+.ai-message {
+  background: rgba(0, 150, 255, 0.1);
+  border: 1px solid rgba(0, 150, 255, 0.2);
+  border-radius: 0 10px 10px 10px;
+  margin-left: 12px;
 }
 
-.chat-message.ai {
-  background-color: #ffffff;
-  color: #000000;
-  margin-right: auto;
-  border: 1px solid #e5e5e5;
+/* 玩家消息气泡 */
+.player-message {
+  background: rgba(0, 255, 150, 0.1);
+  border: 1px solid rgba(0, 255, 150, 0.2);
+  border-radius: 10px 0 10px 10px;
+  margin-right: 0;  /* 移除右侧间距 */
+  order: 1;        /* 确保消息在左边 */
+}
+
+/* 玩家头像样式 */
+.chat-message.player .avatar {
+  order: 2;        /* 确保头像在右边 */
 }
 
 .player-response {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 20px;
+  background: rgba(0, 150, 255, 0.05);
+  border-radius: 10px;
+  padding: 15px;
 }
 
 textarea {
   width: 100%;
-  height: 100px;
-  padding: 12px;
-  font-size: 14px;
-  border: 1px solid #ddd;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 150, 255, 0.3);
+  color: #fff;
   border-radius: 8px;
+  padding: 12px;
   resize: vertical;
-  background-color: #ffffff;
+  font-family: 'Monaco', monospace;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #00d0ff;
+  box-shadow: 0 0 10px rgba(0, 208, 255, 0.2);
 }
 
 button {
-  padding: 12px 24px;
-  background-color: #007bff;
-  color: white;
+  background: linear-gradient(90deg, #0066ff 0%, #00d0ff 100%);
   border: none;
+  padding: 12px 24px;
+  color: white;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  transition: transform 0.2s;
 }
 
-.clue-library {
-  max-width: 800px;
-  margin: 20px auto;
-  padding: 15px;
-  background-color: #ffffff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.clue-library h3 {
-  margin-top: 0;
-  color: #333;
-}
-
-.clue-library ul {
-  list-style: none;
-  padding: 0;
-}
-
-.clue-library li {
-  margin-bottom: 8px;
-  color: #495057;
-  padding: 8px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-}
-
-.navigation-buttons {
-  margin-top: 20px;
-  text-align: center;
+.phase-buttons {
+  position: sticky;
+  bottom: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  gap: 10px;
+  background: rgba(26, 31, 53, 0.8);
+  backdrop-filter: blur(10px);
 }
 
 .next-stage-btn {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 12px 24px;
-  background-color: var(--accent-dark);
-  color: var(--text-light);
+  position: relative;  /* 改为相对定位 */
+  display: block;     /* 块级元素 */
+  margin: 30px auto;  /* 上下间距30px，左右自动居中 */
+  background: linear-gradient(90deg, #00ff88 0%, #00d0ff 100%);
   border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.feedback {
-  background-color: #f8f9fa;
-  padding: 15px;
+  padding: 15px 40px;    /* 增加左右内边距 */
+  color: white;
   border-radius: 8px;
-  margin-top: 5px;
-  line-height: 1.5;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;     /* 加粗文字 */
+  animation: fadeIn 0.5s ease-in-out;
+  box-shadow: 0 4px 15px rgba(0, 208, 255, 0.3);
+  min-width: 200px;      /* 设置最小宽度 */
+  text-align: center;    /* 文字居中 */
 }
 
-.feedback strong {
-  color: #007bff;
-  font-weight: 600;
+.next-stage-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 208, 255, 0.4);
+  background: linear-gradient(90deg, #00ff99 0%, #00e5ff 100%); /* 微调悬浮时的渐变色 */
 }
 
-.score-hint {
-  margin-top: 10px;
-  padding: 8px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  color: #666;
+/* 添加一个新的容器来包裹按钮 */
+.reveal-button-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+  margin-top: 20px;
 }
 
-.score-hint strong {
-  color: #28a745;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.initial-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 20px 0;
+  padding: 20px;
+  background: rgba(0, 150, 255, 0.05);
+  border-radius: 10px;
+}
+
+.phase-btn,
+.initial-buttons .phase-btn {
+  background: linear-gradient(90deg, #0066ff 0%, #00d0ff 100%);
+  border: none;
+  padding: 15px 30px;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  min-width: 200px;
+  text-align: center;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.phase-btn:hover,
+.initial-buttons .phase-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 208, 255, 0.3);
+}
+
+.phase-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chat-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-box::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.chat-box::-webkit-scrollbar-thumb {
+  background: rgba(0, 150, 255, 0.5);
+  border-radius: 3px;
+}
+
+.message-content {
+  max-width: 70%;
+  word-break: break-word;
+}
+
+.chat-message {
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+/* 消息容器样式 */
+.chat-message {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 12px;
+  width: 100%;
+}
+
+/* 玩家消息样式 */
+.chat-message.player {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  margin-left: auto;
+  gap: 12px;
+  width: 85%;                 /* 控制整体宽度 */
+}
+
+/* AI消息样式 */
+.chat-message.ai {
+  padding-right: 20%;
+  width: 85%;                /* 控制整体宽度 */
+}
+
+/* 头像样式 */
+.avatar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 50px;
+}
+
+/* 消息内容样式 */
+.message-content {
+  padding: 12px;
+  border-radius: 10px;
+  color: #fff;
+  max-width: 70%;
+  word-break: break-word;
+}
+
+/* 玩家消息气泡样式 */
+.chat-message.player .message-content {
+  background: rgba(0, 255, 150, 0.1);
+  border: 1px solid rgba(0, 255, 150, 0.2);
+  border-radius: 10px 0 10px 10px;
+  margin-right: 0;  /* 移除右侧间距 */
+  order: 1;        /* 确保消息在左边 */
+}
+
+/* AI消息气泡样式 */
+.chat-message.ai .message-content {
+  background: rgba(0, 150, 255, 0.1);
+  border: 1px solid rgba(0, 150, 255, 0.2);
+  border-radius: 0 10px 10px 10px;
+  margin-left: 12px;  /* 添加左侧间距 */
+}
+
+.phase-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 208, 255, 0.3);
 }
 </style>
