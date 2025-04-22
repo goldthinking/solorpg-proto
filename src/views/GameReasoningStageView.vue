@@ -82,12 +82,9 @@
       </button>
     </div>
 
-    <!-- 揭秘按钮 -->
-    <div class="reveal-button-container" v-if="canProceedToReveal">
-      <button class="next-stage-btn" @click="goToRevealStage">
+    <button class="next-stage-btn" @click="goToRevealStage">
         查看完整案情
-      </button>
-    </div>
+    </button>
   </div>
 </template>
 
@@ -526,7 +523,7 @@ textarea:focus {
   box-shadow: 0 0 10px rgba(0, 208, 255, 0.2);
 }
 
-button {
+.dialogue-section button {
   background: linear-gradient(90deg, #0066ff 0%, #00d0ff 100%);
   border: none;
   padding: 12px 24px;
@@ -553,31 +550,18 @@ button {
 }
 
 .next-stage-btn {
-  position: relative;  /* 改为相对定位 */
-  display: block;     /* 块级元素 */
-  margin: 30px auto;  /* 上下间距30px，左右自动居中 */
-  background: linear-gradient(90deg, #00ff88 0%, #00d0ff 100%);
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  background-color: var(--accent-dark);
+  color: var(--text-light);
   border: none;
-  padding: 15px 40px;    /* 增加左右内边距 */
-  color: white;
-  border-radius: 8px;
-  cursor: pointer;
+  border-radius: 4px;
   font-size: 16px;
-  font-weight: bold;     /* 加粗文字 */
-  animation: fadeIn 0.5s ease-in-out;
-  box-shadow: 0 4px 15px rgba(0, 208, 255, 0.3);
-  min-width: 200px;      /* 设置最小宽度 */
-  text-align: center;    /* 文字居中 */
-}
-
-
-/* 添加一个新的容器来包裹按钮 */
-.reveal-button-container {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  padding: 20px 0;
-  margin-top: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 @keyframes fadeIn {
