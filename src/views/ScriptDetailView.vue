@@ -91,7 +91,7 @@ export default {
   },
   methods: {
     startGame() {
-      this.$router.push("/game-script-stage")
+      this.$router.push('/game-script-stage')
     },
     selectCharacter(index) {
       this.selectedCharacterIndex = index

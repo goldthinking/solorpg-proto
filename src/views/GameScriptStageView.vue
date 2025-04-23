@@ -13,7 +13,6 @@
 <script>
 import ToolBar from "@/components/ToolBar.vue";
 import StageHeader from "@/components/StageHeader.vue";
-import router from "@/router";
 export default {
   name: 'GameScriptStageView',
   components: {
@@ -31,12 +30,12 @@ export default {
         '黑暗中，你听到玻璃碎裂的声音和急促的脚步声。当灯光重新亮起时，主人已不知所踪。管家慌张地跑来报告："主人的房门被反锁了！"你们破门而入，只见威廉·罗斯倒在血泊中，胸口插着一把玫瑰形状的匕首...',
         '林医生立即上前检查，发现匕首上刻着奇怪的符号；约翰·史密斯注意到死者手中紧握着一片玫瑰花瓣；而玛丽·格林则惊恐地发现自己的手帕上沾有血迹。每个人都显得可疑，但真相究竟如何？'
       ],
-      toolTypes: ['script', 'clue', 'character', 'note']
+      toolTypes: ['script', 'clue', 'note']
     }
   },
   methods: {
     goToSearchStage() {
-      router.push('/game-search-stage');
+      this.$router.push('/game-search-stage')
     }
   }
 }
