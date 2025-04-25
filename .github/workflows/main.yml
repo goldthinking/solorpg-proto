@@ -24,7 +24,7 @@ jobs:
       - name: Build project on remote server
         run: |
           ssh ubuntu@124.220.94.212 '
-            export PATH=/home/ubuntu/.nvm/versions/node/v16.20.2/bin:$PATH &&
+            export PATH=/home/ubuntu/.nvm/versions/node/v18.20.8/bin:$PATH &&
             cd /home/ubuntu/services/solorpg/solorpg-frontend &&
             git pull &&
             npm install --legacy-peer-deps &&
