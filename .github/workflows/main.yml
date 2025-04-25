@@ -17,7 +17,6 @@ jobs:
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}"
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 124.220.94.212 >> ~/.ssh/known_hosts
@@ -26,7 +25,7 @@ jobs:
         run: |
           ssh ubuntu@124.220.94.212 '
             export PATH=/home/ubuntu/.nvm/versions/node/v18.20.8/bin:$PATH &&
-            cd /home/ubuntu/services/solorpg/solorpg-frontend &&
+            cd /home/ubuntu/services/solorpg/solorpg-proto &&
             git pull &&
             npm install --legacy-peer-deps &&
             npm run build &&
