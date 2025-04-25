@@ -1,0 +1,56 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main  # 仅在推送到 main 分支时触发
+
+jobs:
+  build:
+    name: Build on remote server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 124.220.94.212 >> ~/.ssh/known_hosts
+
+      - name: Build project on remote server
+        run: |
+          ssh ubuntu@124.220.94.212 '
+            export PATH=/home/ubuntu/.nvm/versions/node/v16.20.2/bin:$PATH &&
+            cd /home/ubuntu/services/solorpg/solorpg-frontend &&
+            git pull &&
+            npm install --legacy-peer-deps &&
+            npm run build &&
+            docker-compose -f /home/ubuntu/services/solorpg/docker-compose.yml up -d &&
+            docker-compose -f /home/ubuntu/services/solorpg/docker-compose.yml down &&
+            docker-compose -f /home/ubuntu/services/solorpg/docker-compose.yml rm solorpg-frontend &&
+            docker rmi solorpg-frontend &&
+            docker build -t solorpg-frontend .
+          '
+
+  deploy:
+    name: Deploy on remote server
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 124.220.94.212 >> ~/.ssh/known_hosts
+
+      - name: Deploy application
+        run: |
+          ssh ubuntu@124.220.94.212 '
+            docker-compose -f /home/ubuntu/services/solorpg/docker-compose.yml up -d
+          '
