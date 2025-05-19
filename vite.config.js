@@ -17,6 +17,15 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 5173
+    port: 5173,
+    proxy: {
+      // 将 API 请求转发到后端的 8848 端口
+      '/api': {
+        target: 'http://localhost:8848', // 后端服务器地址
+        changeOrigin: true,
+        secure: false, // 如果是 https，设置为 true
+        rewrite: (path) => path.replace(/^\/api/, ''), // 去掉路径中的 /api 部分
+      },
+    },
   }
 })
