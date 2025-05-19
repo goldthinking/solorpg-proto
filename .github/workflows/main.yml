@@ -29,6 +29,9 @@ jobs:
           ssh ubuntu@124.220.94.212 '
             export PATH=/home/ubuntu/.nvm/versions/node/v18.20.8/bin:$PATH &&
             cd /home/ubuntu/services/solorpg/solorpg-proto &&
+            git fetch origin && 
+            git reset --hard origin/main && 
+            git clean -fd && 
             git pull &&
             npm install --legacy-peer-deps &&
             npm run build &&
