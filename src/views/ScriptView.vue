@@ -1,9 +1,17 @@
 <template>
   <div class="script-view">
+    <!-- 搜索框 -->
     <div class="search-bar">
-      <input type="text" placeholder="搜索剧本..." />
+      <input
+        type="text"
+        placeholder="搜索剧本..."
+        v-model="searchQuery"
+        @keyup.enter="fetchScripts"
+      />
+      <button @click="fetchScripts">查询</button> <!-- 查询按钮 -->
     </div>
-    
+
+    <!-- 按钮行 -->
     <div class="button-row">
       <button class="rank-button">
         <span>排行榜</span>
@@ -12,27 +20,42 @@
         <span>分类</span>
       </button>
     </div>
-    
+
+    <!-- 剧本列表 -->
     <div class="script-list">
-      <div class="script-item" v-for="(script, index) in scripts" :key="index" @click="goToScriptDetail()">
+      <div
+        class="script-item"
+        v-for="(script, index) in scripts"
+        :key="index"
+        @click="goToScriptDetail(script)"
+      >
         <img :src="script.cover" class="script-cover" />
         <div class="script-info">
           <div class="title-row">
-            <h3>{{ script.name }}</h3>
+            <h3>{{ script.scriptName }}</h3>
             <div class="title-meta">
               <span class="rating">{{ script.rating }}分</span>
               <DifficultyTag :level="script.difficulty" />
             </div>
           </div>
-          <p class="description">{{ script.description }}</p>
+          <p class="description">{{ script.scriptDescription }}</p>
           <div class="bottom-row">
             <div class="tags">
-              <span class="tag" v-for="(tag, tagIndex) in script.tags" :key="tagIndex">{{ tag }}</span>
+              <span class="tag" v-for="(tag, tagIndex) in script.tags" :key="tagIndex">
+                {{ tag.tagName }}
+              </span>
             </div>
-            <span class="players">{{ script.players }}人玩过</span>
+            <span class="players">{{ script.playTimes }}人玩过</span>
           </div>
         </div>
       </div>
+    </div>
+    
+    <!-- 分页按钮 -->
+    <div class="pagination">
+      <button @click="changePage(page - 1)" :disabled="page <= 1">上一页</button>
+      <span>第 {{ page }} 页</span>
+      <button @click="changePage(page + 1)" :disabled="page >= totalPages">下一页</button>
     </div>
   </div>
   <TabBar />
@@ -42,100 +65,69 @@
 import TabBar from '@/components/TabBar.vue'
 import DifficultyTag from '@/components/DifficultyTag.vue'
 import router from '@/router'
+import { fetchScripts } from '@/api/script' 
 
 export default {
   name: 'ScriptView',
   components: { TabBar, DifficultyTag },
   data() {
     return {
-      scripts: [
-        {
-          name: '血色山庄',
-          cover: '',
-          difficulty: 'beginner',
-          rating: 4.5,
-          players: 1200,
-          tags: ['悬疑', '推理'],
-          description: '一座被雪覆盖的山庄，一场离奇的命案，每个人都有自己的秘密...'
-        },
-        {
-          name: '时光邮局',
-          cover: '',
-          difficulty: 'medium',
-          rating: 4.2,
-          players: 850,
-          tags: ['情感', '沉浸'],
-          description: '一封来自过去的信，改变了所有人的命运...'
-        },
-        {
-          name: '镜中世界',
-          cover: '',
-          difficulty: 'hard',
-          rating: 4.8,
-          players: 500,
-          tags: ['烧脑', '反转'],
-          description: '镜子里的世界是真实的吗？谁才是真正的你？'
-        },
-        {
-          name: '古堡迷踪',
-          cover: '',
-          difficulty: 'medium',
-          rating: 4.3,
-          players: 700,
-          tags: ['恐怖', '解谜'],
-          description: '百年古堡中的诡异事件，真相隐藏在黑暗之中...'
-        },
-        {
-          name: '深海迷城',
-          cover: '',
-          difficulty: 'expert',
-          rating: 4.7,
-          players: 600,
-          tags: ['科幻', '悬疑'],
-          description: '海底城市的神秘失踪事件，探索未知的深海世界...'
-        },
-        {
-          name: '校园怪谈',
-          cover: '',
-          difficulty: 'beginner',
-          rating: 4.0,
-          players: 950,
-          tags: ['恐怖', '校园'],
-          description: '午夜校园里的诡异传说，揭开不为人知的秘密...'
-        },
-        {
-          name: '皇家赌局',
-          cover: '',
-          difficulty: 'medium',
-          rating: 4.4,
-          players: 800,
-          tags: ['谍战', '推理'],
-          description: '一场关乎国家命运的赌局，谁是真正的幕后黑手？'
-        },
-        {
-          name: '未来都市',
-          cover: '',
-          difficulty: 'hard',
-          rating: 4.9,
-          players: 550,
-          tags: ['科幻', '赛博朋克'],
-          description: '高科技低生活的未来世界，人类与AI的终极对决...'
-        },
-        {
-          name: '乡村往事',
-          cover: '',
-          difficulty: 'beginner',
-          rating: 4.1,
-          players: 900,
-          tags: ['情感', '乡村'],
-          description: '一个偏远村庄的温情故事，回忆那些被遗忘的时光...'
-        }
-      ]
+      scripts: [], // 存储从后端获取到的剧本数据
+      searchQuery: '', // 存储搜索框的输入
+      page: 1, // 当前页数
+      size: 5, // 每页显示的剧本数量
+      totalPages: 2, // 总页数
+      totalRecords: 0, // 总记录数
+      difficulty: null, // 难度等级
+      difficultyMap: {
+        '入门': 'beginner',
+        '简单': 'easy',
+        '中等': 'medium',
+        '困难': 'hard',
+        '专家': 'expert'
+      }
     }
   },
+  mounted() {
+    // 页面加载完成时获取剧本数据
+    this.fetchScripts()
+  },
   methods: {
-    goToScriptDetail() {
-      router.push({ name: 'script-detail' })
+    // 获取剧本数据
+    fetchScripts() {
+      // 将输入的难度转换为数据库中的实际值
+      const difficultyParam = this.difficultyMap[this.searchQuery] || null;
+      const searchText = '';
+
+      if(difficultyParam) {
+        this.searchText = '';
+      }
+      else {
+        this.searchText = this.searchQuery;
+      }
+
+      fetchScripts(this.page, this.size, null, difficultyParam, this.searchText)
+        .then(data => {
+          this.scripts = data.records; // 更新剧本数据
+          this.totalRecords = data.total; // 获取总记录数
+          this.totalPages = Math.ceil(this.totalRecords / this.size); // 计算总页数
+        })
+        .catch(error => {
+          console.error('获取剧本数据失败:', error);
+        });
+    },
+
+    // 点击剧本跳转到详情页
+    goToScriptDetail(script) {
+      router.push({ name: 'script-detail', params: { scriptId: script.scriptId } });
+    },
+
+    // 改变当前页数
+    changePage(newPage) {
+      if (newPage >= 1 && newPage <= this.totalPages) {
+        this.page = newPage;
+        this.fetchScripts(); // 获取新的剧本数据
+      }
     }
   }
 }
@@ -156,6 +148,8 @@ export default {
   margin-bottom: 20px;
   background-color: var(--bg-primary);
   padding: 10px 0;
+  display: flex;
+  gap: 10px;
 }
 
 .search-bar input {
@@ -165,6 +159,15 @@ export default {
   border-radius: 4px;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
+}
+
+.search-bar button {
+  padding: 10px 20px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 .button-row {
@@ -180,7 +183,7 @@ export default {
   border-radius: 12px;
   color: white;
   cursor: pointer;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
   font-weight: 500;
   font-size: 16px;
@@ -215,7 +218,7 @@ export default {
 
 .button-row button:active {
   transform: translateY(2px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .script-list {
@@ -299,5 +302,25 @@ export default {
   border-radius: 999px;
   font-size: 12px;
   color: var(--text-dark);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.pagination button {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 </style>
