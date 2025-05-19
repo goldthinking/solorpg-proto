@@ -89,11 +89,9 @@ export default {
     }
   },
   mounted() {
-    // 页面加载完成时获取剧本数据
     this.fetchScripts()
   },
   methods: {
-    // 获取剧本数据
     fetchScripts() {
       // 将输入的难度转换为数据库中的实际值
       const difficultyParam = this.difficultyMap[this.searchQuery] || null;
