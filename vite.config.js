@@ -20,7 +20,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://0.0.0.0:8848', // 后端API代理地址
+        target: 'http://0.0.0.0:8848/api', // 后端API代理地址
         changeOrigin: true,  // 是否允许跨域
         secure: false,  // 如果是 https 请求，设置为 true
         rewrite: (path) => path.replace(/^\/api/, '') // 将请求的 '/api' 部分去掉
