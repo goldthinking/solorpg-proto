@@ -93,20 +93,22 @@ export default {
   },
   methods: {
     fetchScripts() {
-      // 将输入的难度转换为数据库中的实际值
+      // 判断是否是有效的难度
       const difficultyParam = this.difficultyMap[this.searchQuery] || null;
-      const searchText = '';
+      let searchText = '';
 
-      if(difficultyParam) {
-        this.searchText = '';
-      }
-      else {
-        this.searchText = this.searchQuery;
+      // 如果难度匹配到了，搜索框清空
+      if (difficultyParam) {
+        this.searchQuery = '';  // 清空搜索框内容
+        searchText = '';  // 不使用搜索词
+      } else {
+        searchText = this.searchQuery;  // 否则使用搜索框的内容
       }
 
-      fetchScripts(this.page, this.size, null, difficultyParam, this.searchText)
+      // 请求后端获取剧本数据
+      fetchScripts(this.page, this.size, null, difficultyParam, searchText)
         .then(data => {
-          this.scripts = data.records; // 更新剧本数据
+          this.scripts = data.data; // 更新剧本数据
           this.totalRecords = data.total; // 获取总记录数
           this.totalPages = Math.ceil(this.totalRecords / this.size); // 计算总页数
         })
