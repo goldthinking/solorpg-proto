@@ -1,11 +1,10 @@
 <template>
-  <div class="script-detail-view">
+  <div v-if="scriptDTO" class="script-detail-view">
     <div class="script-header">
-      <img :src="script.cover" class="script-cover" />
+      <!-- <img :src="script.cover" class="script-cover" /> -->
       <div class="header-info">
-        <h1>{{ script.name }}</h1>
+        <h1>{{ script.scriptName }}</h1>
         <div class="meta-row">
-          <span class="rating">{{ script.rating }}分</span>
           <DifficultyTag :level="script.difficulty" />
         </div>
       </div>
@@ -14,13 +13,13 @@
     <div class="script-content">
       <div class="section">
         <h3>剧本简介</h3>
-        <p class="description">{{ script.description }}</p>
+        <p class="description">{{ script.scriptDescription }}</p>
       </div>
       
       <div class="section">
         <h3>标签</h3>
         <div class="tags">
-          <span class="tag" v-for="(tag, index) in script.tags" :key="index">{{ tag }}</span>
+          <span class="tag" v-for="(tag, index) in scriptDTO.tags" :key="index">{{ tag.tagName }}</span>
         </div>
       </div>
       
@@ -29,20 +28,20 @@
         <div class="characters-scroll">
           <div 
             class="character-item" 
-            v-for="(character, index) in script.characters" 
+            v-for="(character, index) in scriptData.characters" 
             :key="index"
             @click="selectCharacter(index)"
             :class="{ active: selectedCharacterIndex === index }"
           >
             <div class="avatar-container">
-              <img :src="character.avatar" class="character-avatar" />
+              <img :src="character.url" class="character-avatar" />
               <span v-if="index === 0" class="player-tag">玩家</span>
             </div>
             <span class="character-name">{{ character.name }}</span>
           </div>
         </div>
         <div class="character-description">
-          {{ currentCharacter.description }}
+          {{ currentCharacter.desc }}
         </div>
       </div>
       
@@ -51,58 +50,59 @@
   </div>
 </template>
 
-<script>
-import DifficultyTag from '@/components/DifficultyTag.vue'
+<script setup>
+  import { ref, computed, onMounted } from 'vue'
+  import DifficultyTag from '@/components/DifficultyTag.vue'
+  import { fetchScriptDetails, fetchScriptDTODetails } from '@/api/script.js'
+  import { useRoute, useRouter } from 'vue-router'
 
-export default {
-  name: 'ScriptDetailView',
-  components: { DifficultyTag },
-  data() {
-    return {
-      script: {
-        id: 1,
-        name: '血色山庄',
-        cover: 'https://example.com/cover1.jpg',
-        rating: 4.5,
-        difficulty: 'beginner',
-        description: '一座被雪覆盖的山庄，一场离奇的命案，每个人都有自己的秘密...',
-        tags: ['悬疑', '推理'],
-        players: 1200,
-        characters: [
-          {
-            name: '林医生',
-            avatar: 'https://example.com/avatar1.jpg',
-            description: '山庄的家庭医生，表面温和，实际有着不可告人的秘密。'
-          },
-          {
-            name: '王管家',
-            avatar: 'https://example.com/avatar2.jpg',
-            description: '山庄的老管家，对主人忠心耿耿，但似乎知道太多事情。'
-          },
-          {
-            name: '李小姐',
-            avatar: 'https://example.com/avatar3.jpg',
-            description: '山庄主人的女儿，性格孤僻，很少与人交流。'
-          }
-        ]
-      },
-      selectedCharacterIndex: 0
-    }
-  },
-  methods: {
-    startGame() {
-      this.$router.push('/game-script-stage')
-    },
-    selectCharacter(index) {
-      this.selectedCharacterIndex = index
-    }
-  },
-  computed: {
-    currentCharacter() {
-      return this.script.characters[this.selectedCharacterIndex]
-    }
+  const script = ref(null)
+  const scriptDTO = ref(null)
+  const selectedCharacterIndex = ref(0)
+  const scriptData = ref(null)
+
+  // 获取当前路由参数
+  const route = useRoute()
+  const router = useRouter()
+
+  const scriptId = route.params.scriptId  // 从路由参数获取 scriptId
+  if (scriptId) {
+    fetchScriptDetails(scriptId)
+      .then(data => {
+        script.value = data 
+        scriptData.value = JSON.parse(data.scriptData)
+        console.log(scriptData.value)
+      })
+      .catch(error => {
+        console.error("Error fetching script details:", error)
+      })
+
+    fetchScriptDTODetails(scriptId)
+      .then(data => {
+        scriptDTO.value = data
+        console.log(scriptDTO.value)
+      })
+      .catch(error => {
+        console.error("Error fetching scriptDTO details:", error)
+      })
   }
-}
+
+  const currentCharacter = computed(() => {
+    if (scriptData.value && selectedCharacterIndex.value !== null) {
+      return scriptData.value.characters[selectedCharacterIndex.value] || null
+    }
+    return null
+  })
+
+  // 开始游戏
+  const startGame = () => {
+    router.push('/game-script-stage')
+  }
+
+  // 选择角色
+  const selectCharacter = (index) => {
+    selectedCharacterIndex.value = index
+  }
 </script>
 
 <style scoped>

@@ -15,7 +15,7 @@ const router = createRouter({
       component: () => import('../views/ProfileView.vue'),
     },
     {
-      path: '/script-detail',
+      path: '/script-detail/:scriptId',
       name: 'script-detail',
       component: () => import('../views/ScriptDetailView.vue'),
     },
