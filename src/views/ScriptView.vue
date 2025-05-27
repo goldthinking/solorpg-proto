@@ -34,7 +34,6 @@
           <div class="title-row">
             <h3>{{ script.scriptName }}</h3>
             <div class="title-meta">
-              <span class="rating">{{ script.rating }}分</span>
               <DifficultyTag :level="script.difficulty" />
             </div>
           </div>
