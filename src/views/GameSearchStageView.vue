@@ -1,11 +1,11 @@
 <template>
   <div class="game-search-stage-view">
-    <ToolBar :toolTypes="toolTypes" />
+    <ToolBar :toolTypes="toolTypes" :chapterId="chapterId"/>
     <StageHeader stageName="搜查阶段" />
     <div class="map-container" ref="mapContainer">
       <div class="map-content" ref="mapContent">
         <img 
-          src="@/assets/map_test.png" 
+          :src="scriptChapter?.map?.url" 
           class="map-image" 
           draggable="false"
         />
@@ -30,7 +30,7 @@
           @click="showCharacterDialog(character)"
         >
           <div class="avatar-container">
-            <img :src="character.avatar" class="avatar-image" />
+            <img :src="character.url" class="avatar-image" />
             <div class="badge-count" :class="{ hidden: character.unreadCount === 0 }">
               {{ character.unreadCount }}
             </div>
@@ -39,6 +39,7 @@
         </div>
       </div>
       
+      <!-- Character Dialog -->
       <div class="character-dialog" v-if="showDialog && currentCharacter">
         <div class="dialog-content">
           <img :src="currentCharacter.avatar" class="dialog-avatar" />
@@ -55,221 +56,247 @@
       
       <div class="character-dialog" v-if="showDialog && currentClueButton">
         <div class="dialog-content">
-          <img :src="currentClueButton.clues[currentClueIndex].image" class="dialog-avatar" />
+          <img 
+            :src="currentClueButton.clues[currentClueIndex].url" 
+            class="dialog-avatar"
+            @click="openImagePreview(currentClueButton.clues[currentClueIndex].url)"
+          />
           <div class="dialog-message">
-            <p>{{ currentClueButton.clues[currentClueIndex].description }}</p>
+            <p>{{ currentClueButton.clues[currentClueIndex].desc }}</p>
           </div>
-          <button class="dialog-confirm" @click="showNextClue">
-            {{ currentClueIndex > 0 ? '下一条线索' : '关闭' }}
+          <button class="dialog-confirm" @click="closeDialog">
+            {{ '关闭' }}
           </button>
-          <button class="dialog-close" @click="closeDialog">X</button>
         </div>
       </div>
+
+      <!-- 大图预览模态框 -->
+      <div class="image-preview-modal" v-if="showImagePreview" @click.self="closeImagePreview">
+        <div class="modal-content">
+          <img :src="currentPreviewImage" class="preview-image" />
+          <button class="modal-close" @click="closeImagePreview">×</button>
+        </div>
+      </div>
+
       <img 
-        src="@/assets/map_test.png" 
+        :src="scriptChapter?.map?.url" 
         class="map-image" 
         ref="mapImage"
         draggable="false"
       />
-      <div class="edge-indicator left" v-if="showLeftEdge">
-        <svg viewBox="0 0 24 24" width="24" height="24">
-          <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" fill="currentColor"/>
-        </svg>
-      </div>
-      <div class="edge-indicator right" v-if="showRightEdge">
-        <svg viewBox="0 0 24 24" width="24" height="24">
-          <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" fill="currentColor"/>
-        </svg>
-      </div>
     </div>
     <button class="next-stage-btn" @click="goToReasoningStage">搜证完成，开始推理</button>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, toRaw } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useScriptDataStore } from '@/stores/scriptDataStore'; // 引入Pinia store
 import ToolBar from "@/components/ToolBar.vue";
 import StageHeader from "@/components/StageHeader.vue";
-export default {
-  name: 'GameSearchStageView',
-  components: {
-    ToolBar,
-    StageHeader
-  },
-  data() {
-    return {
-      toolTypes: ['script', 'clue', 'note'],
-      isDragging: false,
-      startPos: { x: 0, y: 0 },
-      currentPos: { x: 0, y: 0 },
-      showLeftEdge: false,
-      showRightEdge: false,
-      characters: [
-        { name: '李小姐', avatar: "", unreadCount: 3 },
-        { name: '王管家', avatar: "", unreadCount: 0 },
-        { name: '林医生', avatar: "", unreadCount: 1 }
-      ],
-      showDialog: false,
-      currentCharacter: null,
-      clueButtons: [
-        { 
-          text: '李小姐的房间', 
-          left: '15%', 
-          top: '60%', 
-          clues: [
-            { image: 'src/assets/watchtest.png', description: '断裂的怀表（时间停在11:05）' },
-            { image: 'src/assets/watchtest.png', description: '书桌上的血迹' }
-          ],
-          remaining: 2
-        },
-        { 
-          text: '王管家的房间', 
-          left: '22%', 
-          top: '26%', 
-          clues: [
-            { image: 'src/assets/watchtest.png', description: '床下的药瓶' },
-            { image: 'src/assets/watchtest.png', description: '衣柜里的衣服' }
-          ],
-          remaining: 2
-        },
-        { 
-          text: '林医生的房间', 
-          left: '72%', 
-          top: '64%', 
-          clues: [
-            { image: 'src/assets/watchtest.png', description: '茶几上的指纹' },
-            { image: 'src/assets/watchtest.png', description: '地毯上的脚印' }
-          ],
-          remaining: 2
-        },
-        { 
-          text: '厨房', 
-          left: '79%', 
-          top: '30%', 
-          clues: [
-            { image: 'src/assets/watchtest.png', description: '砧板上的刀' },
-            { image: 'src/assets/watchtest.png', description: '垃圾桶里的药袋' }
-          ],
-          remaining: 2
-        },
-        { 
-          text: '吴总的房间', 
-          left: '53%', 
-          top: '26%', 
-          clues: [
-            { image: 'src/assets/watchtest.png', description: '折断的树枝' },
-            { image: 'src/assets/watchtest.png', description: '泥土中的脚印' }
-          ],
-          remaining: 2
-        },
-        { 
-          text: '杂物间', 
-          left: '40.5%', 
-          top: '64%', 
-          clues: [
-            { image: 'src/assets/watchtest.png', description: '车钥匙' },
-            { image: 'src/assets/watchtest.png', description: '后备箱的行李' }
-          ],
-          remaining: 2
-        }
-      ],
-      currentClueButton: null,
-      currentClueIndex: 0
-    }
-  },
-  mounted() {
-    const mapContainer = this.$refs.mapContainer
-    const mapImage = this.$refs.mapImage
-    
-    mapContainer.addEventListener('touchstart', this.startDrag, { passive: false })
-    mapContainer.addEventListener('touchmove', this.drag, { passive: false })
-    mapContainer.addEventListener('touchend', this.endDrag)
-    mapContainer.addEventListener('touchcancel', this.endDrag)
-  },
-  methods: {
-    startDrag(e) {
-      this.isDragging = true
-      const touch = e.touches ? e.touches[0] : e
-      this.startPos = {
-        x: touch.clientX - (this.currentPos.x || 0),
-        y: touch.clientY - (this.currentPos.y || 0)
-      }
-      this.$refs.mapContainer.style.cursor = 'grabbing'
-    },
-    drag(e) {
-      if (!this.isDragging) return
-      
-      const touch = e.touches ? e.touches[0] : e
-      const newX = touch.clientX - (this.startPos.x || 0)
+import { useClueStore } from '@/stores/clueStore';
 
-      // console.log({
-      //   clientX: touch.clientX,
-      //   startPosX: this.startPos.x,
-      //   newX: newX,
-      //   maxLeft: this.$refs.mapContainer.offsetWidth - this.$refs.mapImage.offsetWidth,
-      //   maxRight: 0
-      // })
-      
-      // 边界检测
-      const containerWidth = this.$refs.mapContainer.offsetWidth
-      const imageWidth = this.$refs.mapContent.offsetWidth
-      const maxLeft = 0
-      const maxRight = containerWidth - imageWidth
-      
-      // 限制横向移动
-      let clampedX = newX
-      if (newX > maxLeft) {
-        clampedX = maxLeft
-        this.showLeftEdge = false
-      } else {
-        this.showLeftEdge = true
-      }
-      
-      if (newX < maxRight) {
-        clampedX = maxRight
-        this.showRightEdge = false
-      } else {
-        this.showRightEdge = true
-      }
-      
-      // 确保在边界内
-      clampedX = Math.max(maxRight, Math.min(maxLeft, newX))
-      
-      this.currentPos = {
-        x: clampedX,
-        y: 0
-      }
-      
-      this.$refs.mapContent.style.transform = `translateX(${this.currentPos.x}px)`
-      e.preventDefault()
-    },
-    endDrag() {
-      this.isDragging = false
-    },
-    showCharacterDialog(character) {
-      this.currentCharacter = character
-      this.showDialog = true
-    },
-    closeDialog() {
-      this.showDialog = false
-    },
-    goToReasoningStage() {
-      this.$router.push('/game-reasoning-stage');
-    },
-    showClueDialog(button, index) {
-      this.currentClueButton = button
-      this.currentClueIndex = button.clues.length - 1
-      this.showDialog = true
-    },
-    showNextClue() {
-      if (this.currentClueButton && this.currentClueIndex > 0) {
-        this.currentClueIndex--
-        this.currentClueButton.remaining--
-      } else {
-        this.showDialog = false
-      }
+const toolTypes = ref(['script', 'clue', 'note'])
+
+// 获取当前路由参数
+const route = useRoute();
+const router = useRouter();
+const showImagePreview = ref(false);
+const currentPreviewImage = ref('');
+
+// 获取 Pinia store 中的 scriptData
+const scriptDataStore = useScriptDataStore();
+const scriptData = scriptDataStore.scriptData; // 获取完整的 scriptData
+
+// 获取章节ID（从路由参数获取 chapterId）
+const chapterId = route.params.chapterId ? parseInt(route.params.chapterId) : 0;
+
+// 通过章节ID从 scriptData 中解析出对应的章节数据
+const scriptChapter = computed(() => {
+  return scriptData?.chapters[chapterId] || {};
+});
+
+
+// 解析 clueButtons 和 characters
+const clueButtons = computed(() => {
+  return scriptChapter.value?.map?.locations?.map(location => ({
+    text: location.name,
+    left: location.position.left,
+    top: location.position.top,
+    clues: location.clues,
+    remaining: location.clues.length
+  })) || [];
+});
+
+const characters = computed(() => {
+  return scriptChapter.value?.npcs || [];
+});
+
+// 用于控制对话框的显示
+const showDialog = ref(false);
+const currentCharacter = ref(null);
+const currentClueButton = ref(null);
+const currentClueIndex = ref(0);
+
+const clueStore = useClueStore();
+// clueStore.clearClues()
+
+// Method: 展示角色对话框
+const showCharacterDialog = (character) => {
+  currentCharacter.value = character;
+  showDialog.value = true;
+};
+
+// Method: 关闭对话框
+const closeDialog = () => {
+  // 如果有线索，点击后根据 remaining 数量来控制是否继续展示下一条线索
+  if (currentClueButton.value && currentClueButton.value.remaining > 0) {
+    currentClueIndex.value++;
+    if (currentClueIndex.value < currentClueButton.value.clues.length) {
+      // 如果有更多线索，展示下一条线索
+      showDialog.value = true;
+      clueStore.addClues(currentClueButton.value.clues[currentClueButton.value.remaining - 1]);
+      currentClueButton.value.remaining--; // 减少 remaining 数量
+    } else {
+      // 如果没有更多线索了，关闭对话框
+      showDialog.value = false;
     }
+  } else {
+    // 如果没有线索，则直接关闭对话框
+    showDialog.value = false;
   }
-}
+};
+
+// Method: 进入推理阶段
+const goToReasoningStage = () => {
+  router.push('/game-reasoning-stage');
+};
+
+// Method: 展示线索对话框
+const showClueDialog = (button) => {
+  currentClueButton.value = button;
+  currentClueIndex.value = button.clues.length > 0 ? 0 : -1; // 设置初始的线索索引
+  
+  // 如果线索剩余数量大于0，展示第一条线索
+  if (button.remaining > 0) {
+    // 显示第一条线索
+    showDialog.value = true;
+    const clueToAdd = button.clues[button.remaining - 1];
+    clueStore.addClues(clueToAdd);
+    console.log(clueStore)
+    currentClueButton.value.remaining--; // 减少 remaining 计数
+  }
+};
+
+// 拖动地图的逻辑
+const mapContainer = ref(null);
+const mapContent = ref(null);
+const mapImage = ref(null);
+const isDragging = ref(false);
+const startPos = ref({ x: 0, y: 0 });
+const translate = ref({ x: 0, y: 0 });
+
+onMounted(() => {
+  const mapContentEl = mapContent.value;
+  
+  // 鼠标事件
+  mapContentEl.addEventListener('mousedown', startDrag);
+  window.addEventListener('mousemove', drag);
+  window.addEventListener('mouseup', endDrag);
+  
+  // 触摸事件
+  mapContentEl.addEventListener('touchstart', startDrag, { passive: false });
+  window.addEventListener('touchmove', drag, { passive: false });
+  window.addEventListener('touchend', endDrag);
+
+  if (clueStore.clues.length > 0) {
+    const rawClues = toRaw(clueStore.clues);
+    scriptChapter.value?.map?.locations?.forEach(location => {
+      location.clues = location.clues.filter(clue => 
+        !rawClues.some(storeClue => storeClue.url === clue.url)
+      );
+    });
+  }
+});
+
+// 计算边界限制
+const getBoundaries = () => {
+  if (!mapContainer.value || !mapImage.value) return { minX: 0, maxX: 0, minY: 0, maxY: 0 };
+  
+  const containerRect = mapContainer.value.getBoundingClientRect();
+  const imageRect = mapImage.value.getBoundingClientRect();
+  
+  return {
+    minX: containerRect.width - imageRect.width,
+    maxX: 0,
+    minY: containerRect.height - imageRect.height,
+    maxY: 0
+  };
+};
+
+// 检查是否点击的是clue-button
+const startDrag = (e) => {
+  // 检查点击目标是否是clue-button或其子元素
+  const isClueButton = e.target.closest('.clue-button');
+  if (isClueButton) {
+    return; // 如果是按钮，不启动拖动
+  }
+
+  isDragging.value = true;
+  const clientX = e.clientX || e.touches[0].clientX;
+  const clientY = e.clientY || e.touches[0].clientY;
+  
+  startPos.value = {
+    x: clientX - translate.value.x,
+    y: clientY - translate.value.y
+  };
+  
+  mapContent.value.style.cursor = 'grabbing';
+  e.preventDefault();
+};
+
+// 拖动中
+const drag = (e) => {
+  if (!isDragging.value) return;
+  
+  const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+  const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+  
+  if (clientX === undefined || clientY === undefined) return;
+  
+  const boundaries = getBoundaries();
+  
+  // 计算新的位置
+  let newX = clientX - startPos.value.x;
+  let newY = clientY - startPos.value.y;
+  
+  // 限制在边界内
+  newX = Math.max(boundaries.minX, Math.min(boundaries.maxX, newX));
+  newY = Math.max(boundaries.minY, Math.min(boundaries.maxY, newY));
+  
+  translate.value = { x: newX, y: newY };
+  mapContent.value.style.transform = `translate(${translate.value.x}px, ${translate.value.y}px)`;
+  
+  e.preventDefault();
+};
+
+// 结束拖动
+const endDrag = () => {
+  isDragging.value = false;
+  mapContent.value.style.cursor = 'grab';
+};
+
+const openImagePreview = (imageUrl) => {
+  currentPreviewImage.value = imageUrl;
+  showImagePreview.value = true;
+};
+
+const closeImagePreview = () => {
+  showImagePreview.value = false;
+  currentPreviewImage.value = '';
+};
+
 </script>
 
 <style scoped>
@@ -374,7 +401,7 @@ export default {
 .character-name {
   margin-top: 5px;
   font-size: 12px;
-  color: #fff;
+  color: #8183ff;
   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
@@ -481,5 +508,54 @@ export default {
   font-size: 16px;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 大图预览模态框样式 */
+.image-preview-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  cursor: zoom-out;
+}
+
+.modal-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  cursor: default;
+}
+
+.modal-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 30px;
+  cursor: pointer;
+}
+
+/* 对话框中的图片添加指针样式 */
+.dialog-avatar {
+  cursor: zoom-in;
+  transition: transform 0.2s;
+}
+
+.dialog-avatar:hover {
+  transform: scale(1.02);
 }
 </style>

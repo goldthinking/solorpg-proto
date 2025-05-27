@@ -51,10 +51,11 @@
 </template>
 
 <script setup>
-  import { ref, computed, onMounted } from 'vue'
+  import { ref, computed } from 'vue'
   import DifficultyTag from '@/components/DifficultyTag.vue'
   import { fetchScriptDetails, fetchScriptDTODetails } from '@/api/script.js'
   import { useRoute, useRouter } from 'vue-router'
+  import { useScriptDataStore } from '@/stores/scriptDataStore'
 
   const script = ref(null)
   const scriptDTO = ref(null)
@@ -66,12 +67,14 @@
   const router = useRouter()
 
   const scriptId = route.params.scriptId  // 从路由参数获取 scriptId
+  const scriptDataStore = useScriptDataStore(); 
+
   if (scriptId) {
     fetchScriptDetails(scriptId)
       .then(data => {
         script.value = data 
         scriptData.value = JSON.parse(data.scriptData)
-        console.log(scriptData.value)
+        scriptDataStore.setScriptData(scriptData.value)
       })
       .catch(error => {
         console.error("Error fetching script details:", error)
@@ -80,7 +83,6 @@
     fetchScriptDTODetails(scriptId)
       .then(data => {
         scriptDTO.value = data
-        console.log(scriptDTO.value)
       })
       .catch(error => {
         console.error("Error fetching scriptDTO details:", error)
@@ -96,7 +98,7 @@
 
   // 开始游戏
   const startGame = () => {
-    router.push('/game-script-stage')
+    router.push({ name: 'game-script-stage', params: { chapterIndex: 0 } });
   }
 
   // 选择角色

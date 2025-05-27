@@ -20,12 +20,12 @@ const router = createRouter({
       component: () => import('../views/ScriptDetailView.vue'),
     },
     {
-      path: '/game-script-stage',
+      path: '/game-script-stage/:chapterIndex',
       name: 'game-script-stage',
       component: () => import('../views/GameScriptStageView.vue'),
     },
     {
-      path: '/game-search-stage',
+      path: '/game-search-stage/:chapterIndex',
       name: 'game-search-stage',
       component: () => import('../views/GameSearchStageView.vue'),
     },
