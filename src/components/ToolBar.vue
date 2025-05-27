@@ -23,12 +23,12 @@
     <div v-if="activePanel === 'script'" class="detail-panel">
       <div class="chapter-tabs">
         <div
-            v-for="chapter in chapters"
-            :key="chapter.id"
-            :class="['tab-item', { active: activeChapter === chapter.id }]"
-            @click="activeChapter = chapter.id"
+            v-for="(chapter, index) in filteredChapters"
+            :key="index"
+            :class="['tab-item', { active: activeChapter === index + 1 }]"
+            @click="activeChapter = index + 1"
         >
-          第{{ chapter.id }}章
+          第{{ index + 1 }}章
         </div>
       </div>
       <div class="chapter-content">
@@ -62,21 +62,17 @@
         <!-- 左侧缩略图列 -->
         <div class="clue-thumbnails">
           <div
-              v-for="clue in clues"
-              :key="clue.id"
+              v-for="(clue, index) in clues"
+              :key="index"
               class="clue-item"
-              @click="activeClue = clue.id"
+              @click="activeClue = clue;"
           >
             <img
-                :src="clue.thumbnail"
+                :src="clue.url"
                 alt="线索缩略图"
+                @click="openImagePreview(clue.url)"
             >
           </div>
-        </div>
-        <!-- 右侧详情区域 -->
-        <div class="clue-detail" v-if="activeClue">
-          <img :src="activeClueData.image" alt="线索大图">
-          <p>{{ activeClueData.description }}</p>
         </div>
       </div>
 
@@ -113,17 +109,31 @@
     </div>
   </div>
 
+  <!-- 大图预览模态框 -->
+  <div class="image-preview-modal" v-if="showImagePreview" @click.self="closeImagePreview">
+    <div class="modal-content">
+      <img :src="currentPreviewImage" class="preview-image" />
+      <button class="modal-close" @click="closeImagePreview">×</button>
+    </div>
+  </div>
+
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useScriptDataStore } from '@/stores/scriptDataStore'
+import { useClueStore } from '@/stores/clueStore'
 
 const props = defineProps({
   toolTypes: {
     type: Array,
     required: true,
     default: () => ['script', 'clue', 'note']
+  },
+  chapterId: {
+    type: Number,
+    required: true,
   }
 })
 
@@ -132,6 +142,12 @@ const activePanel = ref(null)
 const activeChapter = ref(1)
 const activeClue = ref(null)
 const activeClueTab = ref('clue')
+
+const scriptDataStore = useScriptDataStore()
+const clueStore = useClueStore()
+
+const showImagePreview = ref(false);
+const currentPreviewImage = ref('');
 
 const toolIcons = {
   script: 'mdi:book',
@@ -146,100 +162,23 @@ const toolLabels = {
 }
 
 // 数据
-const chapters = ref([
-  {
-    id: 1,
-    title: '第一章 案发当日',
-    content: `2023年10月1日23:17，警方接到报案称青松别墅发生命案。抵达现场时发现：
-    - 死者：林氏集团总裁林国栋（52岁）
-    - 姿势：仰卧在书房地毯上，右手紧握金色怀表
-    - 致命伤：后脑钝器击打（凶器未发现）
-    - 异常状况：书房保险柜开启，重要文件散落
-    - 关键物证：窗台外侧发现的半枚带血迹指纹`
-  },
-  {
-    id: 2,
-    title: '第二章 时间谜团',
-    content: `法医报告显示：
-    - 死亡时间：当日21:30-22:30
-    - 胃内容物检测出微量巴比妥类药物
-    - 怀表停摆时间：23:05（明显晚于死亡时间）
-
-矛盾点：
-    ① 管家证词称22:45最后一次见到活着的死者
-    ② 监控显示21:50后无人进出别墅
-    ③ 死者手表停留在22:15`
-  },
-  {
-    id: 3,
-    title: '第三章 暗流涌动',
-    content: `主要关系人陈述：
-    ▶ 林太太（苏婉蓉，45岁）：
-    - 案发时在琴房练习《月光奏鸣曲》
-    - 近期正协议离婚
-    - 被目击案发前日与私人律师密谈
-
-    ▶ 养子林枫（28岁）：
-    - 案发后手机定位显示在城南酒吧
-    - 两周前被取消遗产继承权
-    - 书房发现其撕毁的借条（金额2000万）`
-  },
-  {
-    id: 4,
-    title: '第四章 血色往事',
-    content: `旧案关联：
-    ■ 20年前青松别墅前主人周氏灭门案
-    - 相似特征：同款金色怀表出现现场
-    - 未解之谜：周家长子下落不明
-
-   新发现：
-    - 林国栋书桌暗格内的老照片：
-      ▷ 五人合影（其中三人被红笔划去）
-      ▷ 背面标注日期：2003.7.15
-      ▷ 右下角潦草字迹："该偿还了"`
-  },{
-    id: 5,
-    title: '第四章 血色往事',
-    content: `旧案关联：
-    ■ 20年前青松别墅前主人周氏灭门案
-    - 相似特征：同款金色怀表出现现场
-    - 未解之谜：周家长子下落不明
-
-   新发现：
-    - 林国栋书桌暗格内的老照片：
-      ▷ 五人合影（其中三人被红笔划去）
-      ▷ 背面标注日期：2003.7.15
-      ▷ 右下角潦草字迹："该偿还了"`
-  }
-])
-
-const clues = ref([
-  {
-    id: 1,
-    description: '断裂的怀表（时间停在11:05）',
-    image: 'src/assets/watchtest.png',
-    thumbnail: 'src/assets/watchtest.png'
-  },{
-    id: 2,
-    description: '断裂的怀表',
-    image: 'src/assets/watchtest.png',
-    thumbnail: 'src/assets/watchtest.png'
-  }
-])
+const chapters = computed(() => scriptDataStore.scriptData?.chapters || [])
+const clues = computed(() => clueStore.clues || [])
 
 const aiLogs = ref([
   { type: 'user', content: '死者的死亡时间是什么时候？' },
   { type: 'ai', content: '根据法医报告...' }
 ])
 
+// 根据传入的 chapterId 过滤章节
+const filteredChapters = computed(() =>
+  chapters.value.filter((_, index) => index <= props.chapterId) // 使用 index 筛选
+)
+
+// 获取当前章节的数据
 const activeChapterData = computed(() =>
-    chapters.value.find(c => c.id === activeChapter.value) || {}
+  chapters.value.find((_, index) => index === activeChapter.value - 1) || {}
 )
-
-const activeClueData = computed(() =>
-    clues.value.find(c => c.id === activeClue.value) || {}
-)
-
 
 const openPanel = (type) => {
   isExpanded.value = false
@@ -250,6 +189,16 @@ const closePanel = () => {
   activePanel.value = null
   activeClue.value = null
 }
+
+const openImagePreview = (imageUrl) => {
+  currentPreviewImage.value = imageUrl;
+  showImagePreview.value = true;
+};
+
+const closeImagePreview = () => {
+  showImagePreview.value = false;
+  currentPreviewImage.value = '';
+};
 </script>
 
 <style scoped>
@@ -337,8 +286,11 @@ const closePanel = () => {
 }
 
 .chapter-content {
-  line-height: 1.6;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 10px;
 }
+
 .clueAndai {
   display: flex;
   gap: 10px
@@ -355,7 +307,7 @@ const closePanel = () => {
   flex-direction: column; /* 纵向排列 */
   gap: 10px; /* 缩略图间距 */
   overflow-y: auto; /* 添加垂直滚动条 */
-  width: 50px; /* 左侧列宽度 */
+  width: 100px; /* 左侧列宽度 */
   padding: 10px;
   background: rgba(245, 245, 245, 0); /* 可选背景色 */
 }
@@ -363,8 +315,9 @@ const closePanel = () => {
 .clue-item {
   cursor: pointer;
   transition: transform 0.2s;
-  width: 50px; /* 固定缩略图宽度 */
-  height: 50px; /* 固定缩略图高度 */
+  width: 100px; /* 固定缩略图宽度 */
+  height: 100px; /* 固定缩略图高度 */
+  padding: 10px;
 }
 
 .clue-item img {
@@ -428,5 +381,54 @@ const closePanel = () => {
   color: white;
   font-size: 25px;
   cursor: pointer;
+}
+
+/* 大图预览模态框样式 */
+.image-preview-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  cursor: zoom-out;
+}
+
+.modal-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  cursor: default;
+}
+
+.modal-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 30px;
+  cursor: pointer;
+}
+
+/* 对话框中的图片添加指针样式 */
+.dialog-avatar {
+  cursor: zoom-in;
+  transition: transform 0.2s;
+}
+
+.dialog-avatar:hover {
+  transform: scale(1.02);
 }
 </style>
