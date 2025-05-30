@@ -40,17 +40,43 @@
       </div>
       
       <!-- Character Dialog -->
-      <div class="character-dialog" v-if="showDialog && currentCharacter">
+      <div class="character-dialog" v-if="showChDialog && currentCharacter">
         <div class="dialog-content">
-          <img :src="currentCharacter.avatar" class="dialog-avatar" />
+          <img :src="currentCharacter.url" class="dialog-avatar" />
           <div class="dialog-name">{{ currentCharacter.name }}</div>
           <div class="dialog-message">
             <p>你可以向 {{ currentCharacter.name }} 提问</p>
             <p>TA的回答中可能会有不真实的信息，但是<b>加粗</b>的内容一定是正确的</p>
           </div>
           <textarea class="dialog-input" placeholder="输入你的问题..."></textarea>
-          <button class="dialog-confirm" @click="closeDialog">确认</button>
+          <button class="dialog-confirm" @click="startStreaming">发送</button>
           <button class="dialog-close" @click="closeDialog">X</button>
+          <div class="chat-container">
+            <div
+              class="chat-item"
+              v-for="(msg, index) in chatHistory"
+              :key="index"
+              :class="msg.role"
+            >
+              <!-- AI 气泡左侧头像 -->
+              <template v-if="msg.role === 'ai'">
+                <img :src="currentCharacter?.url" class="avatar" />
+                <div class="chat-bubble ai">{{ msg.content }}</div>
+              </template>
+
+              <!-- 用户气泡右侧头像 -->
+              <template v-else>
+                <div class="chat-bubble user">{{ msg.content }}</div>
+                <img src="/images/pic/大明星最后的演出/韩伟文.jpg" class="avatar" />
+              </template>
+            </div>
+
+            <!-- AI 正在回复时的流式输出 -->
+            <div class="chat-item ai" v-if="loadingAnswer">
+              <img :src="currentCharacter?.url" class="avatar" />
+              <div class="chat-bubble ai">{{ streamingAnswer }}</div>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -96,6 +122,7 @@ import { useScriptDataStore } from '@/stores/scriptDataStore'; // 引入Pinia st
 import ToolBar from "@/components/ToolBar.vue";
 import StageHeader from "@/components/StageHeader.vue";
 import { useClueStore } from '@/stores/clueStore';
+import { fetchStreamingAnswer } from '@/api/question';
 
 const toolTypes = ref(['script', 'clue', 'note'])
 
@@ -135,6 +162,7 @@ const characters = computed(() => {
 
 // 用于控制对话框的显示
 const showDialog = ref(false);
+const showChDialog = ref(false);
 const currentCharacter = ref(null);
 const currentClueButton = ref(null);
 const currentClueIndex = ref(0);
@@ -145,7 +173,7 @@ const clueStore = useClueStore();
 // Method: 展示角色对话框
 const showCharacterDialog = (character) => {
   currentCharacter.value = character;
-  showDialog.value = true;
+  showChDialog.value = true;
 };
 
 // Method: 关闭对话框
@@ -166,6 +194,7 @@ const closeDialog = () => {
     // 如果没有线索，则直接关闭对话框
     showDialog.value = false;
   }
+  showChDialog.value = false;
 };
 
 // Method: 进入推理阶段
@@ -295,6 +324,56 @@ const openImagePreview = (imageUrl) => {
 const closeImagePreview = () => {
   showImagePreview.value = false;
   currentPreviewImage.value = '';
+};
+
+const streamingAnswer = ref('');
+const loadingAnswer = ref(false);
+const chatHistory = ref([]) // 聊天记录，包含角色和AI内容
+
+
+const startStreaming = async () => {
+  const inputElement = document.querySelector('.dialog-input');
+  const question = inputElement?.value?.trim() || '';
+
+  if (!question) {
+    alert('请输入你的问题');
+    return;
+  }
+
+  // 推入用户提问
+  chatHistory.value.push({ role: 'user', content: question });
+
+  const promptPayload = {
+    prompt: 1,
+    characterName: currentCharacter.value?.name || '',
+    scripts: JSON.stringify(scriptData),
+    truth: scriptData?.reveal?.content || '',
+    question,
+  };
+
+  streamingAnswer.value = '';
+  loadingAnswer.value = true;
+
+  try {
+    await fetchStreamingAnswer(
+      promptPayload,
+      (chunk) => {
+        if (showChDialog.value) {
+          streamingAnswer.value += chunk;
+        }
+      },
+      (finalResult) => {
+        if (showChDialog.value) {
+          chatHistory.value.push({ role: 'ai', content: finalResult });
+        }
+      }
+    );
+  } catch (err) {
+    console.error('流式AI出错:', err);
+  } finally {
+    loadingAnswer.value = false;
+    inputElement.value = '';
+  }
 };
 
 </script>
@@ -444,20 +523,20 @@ const closeImagePreview = () => {
 }
 
 .dialog-avatar {
-  width: 80px;
-  height: 80px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
-  margin: 0 auto 15px;
+  margin: 0 auto 1px;
   object-fit: cover;
 }
 
 .dialog-name {
   font-size: 18px;
-  margin-bottom: 15px;
+  margin-bottom: 1px;
 }
 
 .dialog-message {
-  margin-bottom: 20px;
+  margin-bottom: 2px;
   font-size: 16px;
 }
 
@@ -476,7 +555,7 @@ const closeImagePreview = () => {
   width: 100%;
   min-height: 100px;
   padding: 10px;
-  margin: 15px 0;
+  margin: 1px 0;
   background-color: var(--bg-primary);
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -486,7 +565,7 @@ const closeImagePreview = () => {
 
 .dialog-confirm {
   padding: 10px 20px;
-  margin-top: 10px;
+  margin-top: 1px;
   background-color: var(--accent-dark);
   color: white;
   border: none;
@@ -557,5 +636,101 @@ const closeImagePreview = () => {
 
 .dialog-avatar:hover {
   transform: scale(1.02);
+}
+
+.stream-output {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 12px;
+  border-radius: 4px;
+  text-align: left;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 10px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+}
+
+.typing {
+  font-style: italic;
+  color: #aaa;
+}
+
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background-color: var(--bg-primary);
+  font-size: 14px;
+  gap: 8px;
+}
+
+.chat-bubble {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-width: 75%;
+  min-width: 80px;
+  width: fit-content;
+  box-sizing: border-box;
+}
+
+.chat-bubble.user {
+  background-color: var(--accent-light);
+  color: white;
+  align-self: flex-end;
+  text-align: right;
+  border-top-right-radius: 0;
+}
+
+.chat-bubble.ai {
+  background-color: #e6e6f7;
+  color: #333;
+  align-self: flex-start;
+  text-align: left;
+  border-top-left-radius: 0;
+}
+
+.chat-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.chat-item.user {
+  justify-content: flex-end;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.chat-item.user .avatar {
+  order: 2; /* 确保头像在右边 */
+}
+
+.chat-item.user .chat-bubble {
+  order: 1;
+}
+
+.chat-item.ai .avatar {
+  order: 1;
+}
+
+.chat-item.ai .chat-bubble {
+  order: 2;
 }
 </style>
