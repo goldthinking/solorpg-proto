@@ -12,14 +12,14 @@
     </div>
 
     <!-- 按钮行 -->
-    <div class="button-row">
+    <!-- <div class="button-row">
       <button class="rank-button">
         <span>排行榜</span>
       </button>
       <button class="category-button">
         <span>分类</span>
       </button>
-    </div>
+    </div> -->
 
     <!-- 剧本列表 -->
     <div class="script-list">
@@ -52,9 +52,9 @@
     
     <!-- 分页按钮 -->
     <div class="pagination">
-      <button @click="changePage(page - 1)" :disabled="page <= 1">上一页</button>
+      <button @click="changePage(page - 1)" :disabled="page <= 1" style="margin-right: 20px;">上一页</button>
       <span>第 {{ page }} 页</span>
-      <button @click="changePage(page + 1)" :disabled="page >= totalPages">下一页</button>
+      <button @click="changePage(page + 1)" :disabled="page >= totalPages" style="margin-left: 20px;">下一页</button>
     </div>
   </div>
   <TabBar />
