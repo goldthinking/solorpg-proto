@@ -56,6 +56,7 @@
   import { fetchScriptDetails, fetchScriptDTODetails } from '@/api/script.js'
   import { useRoute, useRouter } from 'vue-router'
   import { useScriptDataStore } from '@/stores/scriptDataStore'
+  import { useGameSessionStore } from '@/stores/gameSessionStore'
 
   const script = ref(null)
   const scriptDTO = ref(null)
@@ -68,6 +69,8 @@
 
   const scriptId = route.params.scriptId  // 从路由参数获取 scriptId
   const scriptDataStore = useScriptDataStore(); 
+  const gameSessionStore = useGameSessionStore();
+  gameSessionStore.$reset();
 
   if (scriptId) {
     fetchScriptDetails(scriptId)

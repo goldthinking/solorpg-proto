@@ -2,7 +2,7 @@
   <div class="game-reasoning-stage-view">
     <ToolBar :toolTypes="toolTypes" />
     <StageHeader stageName="推理阶段" />
-    
+
     <div class="dialogue-section">
       <div class="comm-device">
         <!-- 保持设备头部不变 -->
@@ -12,16 +12,18 @@
             <span class="encryption">加密通讯中...</span>
           </div>
         </div>
-        
+
         <div class="chat-box">
-          <div v-for="(message, index) in chatHistory" 
-               :key="index" 
-               class="message" 
-               :class="message.type">
+          <div
+            v-for="(message, index) in chatHistory"
+            :key="index"
+            class="message"
+            :class="message.type"
+          >
             <!-- AI消息模板 -->
             <template v-if="message.type === 'ai'">
               <div class="avatar">
-                <img src="/images/avatar-c.png" alt="C君">
+                <img src="/images/avatar-c.png" alt="C君" />
                 <span class="name">助手</span>
               </div>
               <div class="message-content">
@@ -30,14 +32,26 @@
             </template>
             <!-- 玩家消息模板 -->
             <template v-else>
-              <div class="message-content">
+              <div class="message-content player-message">
                 <p v-html="message.content"></p>
               </div>
-              <div class="avatar">
-                <img src="/images/avatar-d.jpg" alt="D调查员">
+              <div class="avatar player-avatar">
+                <img src="/images/avatar-d.jpg" alt="D调查员" />
                 <span class="name">调查员D</span>
               </div>
             </template>
+          </div>
+
+          <!-- 流式输出的AI回答 -->
+          <div class="message ai" v-if="loadingAnswer">
+            <div class="avatar">
+              <img src="/images/avatar-c.png" alt="C君" />
+              <span class="name">助手</span>
+            </div>
+            <div class="message-content">
+              <p>{{ streamingAnswer }}</p>
+              <!-- 实时更新的流式内容 -->
+            </div>
           </div>
         </div>
 
@@ -54,9 +68,11 @@
         <!-- 游戏开始后的输入区域 -->
         <div v-else>
           <div class="player-response">
-            <textarea v-model="playerAnswer" 
-                      placeholder="输入调查报告内容..." 
-                      @keyup.ctrl.enter="submitAnswer">
+            <textarea
+              v-model="playerAnswer"
+              placeholder="输入调查报告内容..."
+              @keyup.ctrl.enter="submitAnswer"
+            >
             </textarea>
             <button @click="submitAnswer">
               <i class="fas fa-paper-plane"></i>
@@ -68,322 +84,286 @@
     </div>
 
     <!-- 阶段转换按钮 -->
-    <div v-if="gameStarted" class="phase-buttons">
-      <button v-if="gamePhase === 'search'" 
-              @click="startReasoning" 
-              class="phase-btn">
+    <div v-if="gameStarted && !allvisted" class="phase-buttons">
+      <button
+        v-if="gamePhase === 'search'"
+        @click="startReasoning"
+        class="phase-btn"
+      >
         没什么疑问了，进行现阶段线索归档吧
       </button>
-      <button v-if="gamePhase === 'reasoning'" 
-              @click="backToSearch" 
-              :disabled="remainingQuestions === 0"
-              class="phase-btn">
+      <button
+        v-if="gamePhase === 'reasoning' && !hasQuestion"
+        @click="startInitialSearch"
+        :disabled="remainingQuestions === 0"
+        class="phase-btn"
+      >
         我还有一些疑惑，你帮我搜一下
       </button>
     </div>
 
-    <button class="next-stage-btn" @click="goToRevealStage">
-        查看完整案情
+    <!-- 查看完整案情按钮 -->
+    <button v-if="allvisted" class="next-stage-btn" @click="goToNextStage">
+      查看完整案情
     </button>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, nextTick } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useScriptDataStore } from "@/stores/scriptDataStore"; // 引入Pinia Store
+import { useGameSessionStore } from "@/stores/gameSessionStore";
 import ToolBar from "@/components/ToolBar.vue";
 import StageHeader from "@/components/StageHeader.vue";
+import { fetchStreamingAnswer } from "@/api/question"; // 导入流式请求的函数
 
-import router from "@/router";
-export default {
-  name: 'GameReasoningStageView',
-  components: {
-    ToolBar,
-    StageHeader
-  },
-  data() {
-    return {
-      gameStarted: false,
-      gamePhase: 'init',
-      remainingQuestions: 5,
-      currentReasoningIndex: 0,
-      toolTypes: ['script', 'clue', 'note'],
-      chatHistory: [],
-      playerAnswer: '',
-      dialogueFlow: {
-        initial: {
-          content: "对这个案件有头绪了吗，那我们进行线索归档吧！如果还有任何疑惑，我可以偷偷贿赂Adam查一查哦？"
-        },
-        searchPhase: {
-          opening: "D sir，我给管档案的Adam上供了5瓶胡椒博士，他松口说我们可以查5个问题，你有什么要搜的吗？",
-          outOfQuestions: "不行不行，Adam黑脸了，我先溜了^^",
-          responses: {
-            isOut: "是！完全被你看穿了！",
-            notSuicide: "否。D sir再仔细想想吧！",
-            irrelevant: "欸？好像与此无关吧……"
-          },
-          // 添加示例对话
-          examples: [
-            {
-              question: "李小姐昨天夜里不在房间里吧？",
-              answer: "是！完全被你看穿了！",
-              type: "isOut"
-            },
-            {
-              question: "助手喜欢喝胡椒博士吗？",
-              answer: "欸？好像与此无关吧……",
-              type: "irrelevant"
-            },
-            {
-              question: "死者是自杀吗？",
-              answer: "否。D sir再仔细想想吧！",
-              type: "notSuicide"
-            }
-          ]
-        },
-        reasoningPhase: {
-          opening: "让我们开始线索归档吧！我会根据你的分析记录重要线索。",
-          examples: [
-            {
-              question: "这个雪夜里谁最有可能进入死者的房间？为什么？",
-              wrongAnswer: "李小姐吧。她说谎了，明明在晚上出过门。",
-              correctAnswer: "分析足迹和时间线，应该是管家。雪地上有新鲜足迹通向死者房间，而且根据时间线管家是最后见到死者的人。",
-              response: "这个推理很有道理！【记录中.jpg】根据足迹和时间线确实能得出这个结论。",
-              keywords: ['足迹', '雪地', '时间', '行动']
-            },
-            {
-              question: "李小姐和王管家的证词冲突，谁更可信？",
-              playerAnswer: "王管家的说法更可信。因为李小姐与死者有经济纠纷且性格冲动，而王管家是老员工，性格稳重没有作案动机。",
-              response: "没错！分析人物关系和动机很重要。",
-              keywords: ['动机', '性格', '证词', '关系']
-            },
-            {
-              question: "法医发现的痕迹说明了什么？",
-              playerAnswer: "死者遗体上的勒痕和现场工具痕迹显示是用细绳作案，而且在死者脖子上还发现了特殊纤维残留。",
-              response: "完全正确！看来D sir已经完全理清了案情。准备好查看完整案情了吗？",
-              keywords: ['痕迹', '工具', '现场', '证据']
-            }
-          ],
-          completion: "这种难度的案子对D sir简直是信手拈来嘛，线索都归档完毕了，我们来看看完整案情吧~"
-        }
-      }
-    }
-  },
-  
-  computed: {
-    canProceedToReveal() {
-      return this.gamePhase === 'reasoning' && 
-             this.currentReasoningIndex >= this.dialogueFlow.reasoningPhase.examples.length;
-    }
-  },
+// 获取 Pinia store 中的 scriptData
+const scriptDataStore = useScriptDataStore();
+const scriptData = scriptDataStore.scriptData; // 获取完整的 scriptData
+const totalChapters = computed(() => scriptData?.chapters?.length || 0);
 
-  methods: {
-    startInitialReasoning() {
-      this.gameStarted = true;
-      this.gamePhase = 'reasoning';
-      this.startReasoning();
-    },
+// 获取当前路由参数
+const route = useRoute();
+const router = useRouter();
+const visitedPhases = ref({
+  search: false,
+  reasoning: false,
+});
 
-    startInitialSearch() {
-      this.gameStarted = true;
-      this.gamePhase = 'search';
-      
-      // 显示开场白
-      this.chatHistory.push({
-        type: 'ai',
-        content: this.dialogueFlow.searchPhase.opening
-      });
-      
-      // 添加一个短暂延迟后显示示例对话
-      setTimeout(() => {
-        // 为每个示例创建一问一答的对话
-        this.dialogueFlow.searchPhase.examples.forEach((example, index) => {
-          setTimeout(() => {
-            // 添加问题
-            this.chatHistory.push({
-              type: 'player',
-              content: example.question
-            });
-            
-            // 添加回答
-            setTimeout(() => {
-              this.chatHistory.push({
-                type: 'ai',
-                content: example.answer
-              });
-            }, 500);
-          }, index * 1500); // 每组对话间隔1.5秒
-        });
-      }, 1000);
-    },
+const allvisted = ref(false);
 
-    async submitAnswer() {
-      if (!this.playerAnswer.trim()) return;
+// 获取章节ID（从路由参数获取 chapterId）
+const chapterId = parseInt(route.params.chapterIndex);
 
-      this.chatHistory.push({ 
-        type: 'player', 
-        content: this.playerAnswer 
-      });
+// 通过章节ID从 scriptData 中解析出对应的章节数据
+const scriptChapter = computed(() => {
+  return scriptData?.chapters[chapterId] || {};
+});
 
-      if (this.gamePhase === 'search') {
-        await this.handleSearchPhase();
-      } else {
-        await this.handleReasoningPhase();
-      }
-      
-      this.playerAnswer = '';
-      
-      // 自动滚动到底部
-      this.$nextTick(() => {
-        const chatBox = document.querySelector('.chat-box');
-        chatBox.scrollTop = chatBox.scrollHeight;
-      });
-    },
+// 获取该章节的 questions
+const questions = computed(() => scriptChapter.value?.questions || []);
 
-    async handleSearchPhase() {
-      if (this.remainingQuestions > 0) {
-        const response = this.getSearchResponse(this.playerAnswer);
-        this.chatHistory.push({
-          type: 'ai',
-          content: response
-        });
-        this.remainingQuestions--;
-      } else {
-        this.chatHistory.push({
-          type: 'ai',
-          content: this.dialogueFlow.searchPhase.outOfQuestions
-        });
-      }
-    },
+// 当前角色，AI助手的角色信息
+const currentCharacter = ref({
+  name: "助手",
+  avatar: "/images/avatar-c.png",
+});
 
-    async handleReasoningPhase() {
-      const currentQuestion = this.dialogueFlow.reasoningPhase.examples[this.currentReasoningIndex];
-      
-      // 如果是第一题的错误答案
-      if (this.currentReasoningIndex === 0 && 
-          this.playerAnswer.includes("李小姐")) {
-        this.chatHistory.push({
-          type: 'ai',
-          content: currentQuestion.wrongAnswer
-        });
-        return;
-      }
-      
-      const score = this.evaluateAnswer(this.playerAnswer, currentQuestion.keywords);
-      if (score >= 75) {
-        this.chatHistory.push({
-          type: 'ai',
-          content: currentQuestion.response
-        });
-        
-        if (this.currentReasoningIndex < 2) {
-          this.currentReasoningIndex++;
-          setTimeout(() => {
-            this.chatHistory.push({
-              type: 'ai',
-              content: this.dialogueFlow.reasoningPhase.examples[this.currentReasoningIndex].question
-            });
-          }, 1000);
-        } else {
-          this.chatHistory.push({
-            type: 'ai',
-            content: this.dialogueFlow.reasoningPhase.completion
-          });
-        }
-      } else {
-        this.chatHistory.push({
-          type: 'ai',
-          content: "请再仔细思考一下~"
-        });
-      }
-    },
+// 初始化游戏的状态
+const gameStarted = ref(false);
+const gamePhase = ref("init");
+const remainingQuestions = ref(5);
+const currentReasoningIndex = ref(0);
+const toolTypes = ref(["script", "clue", "note"]);
+const chatHistory = ref([]);
+const playerAnswer = ref("");
+const showChDialog = ref(false);
 
-    startReasoning() {
-      this.gamePhase = 'reasoning';
-      this.chatHistory.push({
-        type: 'ai',
-        content: this.dialogueFlow.reasoningPhase.opening
-      });
-      
-      // 添加示例对话
-      setTimeout(() => {
-        this.dialogueFlow.reasoningPhase.examples.forEach((example, index) => {
-          setTimeout(() => {
-            // 显示问题
-            this.chatHistory.push({
-              type: 'ai',
-              content: example.question
-            });
-            
-            // 显示玩家示例回答
-            setTimeout(() => {
-              this.chatHistory.push({
-                type: 'player',
-                content: example.playerAnswer || example.correctAnswer
-              });
-              
-              // 显示助手回应
-              setTimeout(() => {
-                this.chatHistory.push({
-                  type: 'ai',
-                  content: example.response
-                });
-              }, 800);
-            }, 800);
-          }, index * 2500); // 每组对话间隔2.5秒
-        });
-        
-        // 最后显示完成提示并更新索引
-        setTimeout(() => {
-          this.chatHistory.push({
-            type: 'ai',
-            content: this.dialogueFlow.reasoningPhase.completion
-          });
-          this.currentReasoningIndex = this.dialogueFlow.reasoningPhase.examples.length;
-        }, this.dialogueFlow.reasoningPhase.examples.length * 2500);
-      }, 1000);
-    },
+// 用户输入的问题
+const playerQuestion = ref("");
 
-    backToSearch() {
-      if (this.remainingQuestions > 0) {
-        this.gamePhase = 'search';
-        this.chatHistory.push({
-          type: 'ai',
-          content: `还可以问${this.remainingQuestions}个问题，你想知道什么？`
-        });
-      }
-    },
+// AI 流式输出
+const streamingAnswer = ref("");
+const loadingAnswer = ref(false);
+const hasQuestion = ref(true);
 
-    getSearchResponse(question) {
-      if (question.includes("李小姐") && question.includes("房间")) {
-        return this.dialogueFlow.searchPhase.responses.isOut;
-      }
-      if (question.includes("自杀")) {
-        return this.dialogueFlow.searchPhase.responses.notSuicide;
-      }
-      return this.dialogueFlow.searchPhase.responses.irrelevant;
-    },
+const gameSessionStore = useGameSessionStore();
 
-    evaluateAnswer(answer, keywords) {
-      const foundKeywords = keywords.filter(keyword => answer.includes(keyword));
-      return Math.min(foundKeywords.length * 25, 100);
-    },
-
-    goToRevealStage() {
-      this.$router.push('/game-reveal-stage');
-    }
-  },
-
-  mounted() {
-    // 初始化时只显示开场白
-    this.chatHistory.push({ 
-      type: 'ai', 
-      content: this.dialogueFlow.initial.content
-    });
-    
-    // 其他状态保持为初始值
-    this.gameStarted = false;
-    this.gamePhase = 'init';
+// 启动初始推理
+const startInitialReasoning = () => {
+  gameStarted.value = true;
+  gamePhase.value = "reasoning";
+  visitedPhases.value.reasoning = true;
+  if (visitedPhases.value.search === true) {
+    allvisted.value = true;
   }
-}
+  startReasoning();
+};
+
+// 启动初始案件疑问探查
+const startInitialSearch = () => {
+  gameStarted.value = true;
+  gamePhase.value = "search";
+  visitedPhases.value.search = true;
+  if (visitedPhases.value.reasoning === true) {
+    allvisted.value = true;
+  }
+  chatHistory.value.push({
+    type: "ai",
+    content:
+      "D sir，我给管档案的Adam上供了5瓶胡椒博士，他松口说我们可以查5个问题，你有什么要搜的吗？",
+  });
+};
+
+const submitAnswer = async () => {
+  if (!playerAnswer.value.trim()) return;
+
+  // 1. 推送用户的消息到聊天记录
+  chatHistory.value.push({
+    type: "player",
+    content: playerAnswer.value,
+  });
+
+  // 2. 根据当前游戏阶段决定不同的逻辑
+  let promptPayload = {};
+
+  if (gamePhase.value === "reasoning") {
+    // 推理阶段：将玩家的回答封装到 `prompt` 中，发送给大模型
+    promptPayload = {
+      prompt: 3, // 推理阶段的prompt
+      scripts: JSON.stringify(scriptData?.chapters[chapterId] || []),
+      truth: scriptData?.chapters[chapterId].truth || "",
+      question:
+        scriptData?.chapters[chapterId]?.questions[currentReasoningIndex.value]
+          ?.question, // 获取当前问题
+      referenceAnswer:
+        scriptData?.chapters[chapterId]?.questions[currentReasoningIndex.value]
+          ?.referenceAnswer, // 获取参考答案
+      answer: playerAnswer.value, // 玩家输入的答案
+    };
+  } else if (gamePhase.value === "search") {
+    if (remainingQuestions.value <= 0) {
+      chatHistory.value.push({
+        type: "ai",
+        content: "不行不行，Adam黑脸了，我先溜了^^",
+      });
+      return;
+    }
+    // 搜索阶段：将用户提出的问题发送给大模型
+    promptPayload = {
+      prompt: 2, // 搜索阶段的prompt
+      truth: scriptData.reveal.content || "",
+      question: playerAnswer.value, // 用户提出的问题
+    };
+    remainingQuestions.value--;
+  }
+
+  streamingAnswer.value = "";
+  loadingAnswer.value = true;
+
+  try {
+    // 3. 调用流式API，将 `prompt` 和其他数据发送给大模型
+    const score = ref(0);
+    await fetchStreamingAnswer(
+      promptPayload,
+      (chunk) => {
+        streamingAnswer.value += chunk;
+      },
+      (finalResult) => {
+        // 4. AI 返回的完整回答，推送到聊天记录
+        chatHistory.value.push({ type: "ai", content: finalResult });
+        if (gamePhase.value === "reasoning"){
+          const scoreMatch = finalResult.match(/\d+/);
+          score.value = parseInt(scoreMatch[0], 10); // 获取分数
+        } else {
+          gameSessionStore.incrementQuestionAskCount();
+          if (finalResult.includes("正确")) {
+            // 如果包含 "正确"，增加正确提问次数
+            gameSessionStore.incrementQuestionCorrectAskCount();
+          }
+        }
+      }
+    );
+
+    // 5. 如果当前是推理阶段，则检查是否有下一个问题，若有则提问
+    if (gamePhase.value === "reasoning") {
+      gameSessionStore.incrementPlayerAnswerCount(scriptData?.chapters[chapterId]?.questions[currentReasoningIndex.value]?.question, score.value);
+      console.log(gameSessionStore);
+      if (score.value >= 7) {
+        // 如果分数 >= 7，进入下一个问题
+        setTimeout(() => {
+          if (currentReasoningIndex.value < questions.value.length - 1) {
+            currentReasoningIndex.value++; // 更新索引，指向下一个问题
+            askQuestion(); // 提问下一个问题
+          } else {
+            hasQuestion.value = false;
+          }
+        }, 1000); // 延迟 1 秒后提问下一个问题
+      } else {
+        // 如果分数 < 7，不提问下一个问题
+        chatHistory.value.push({
+          type: "ai",
+          content: "请再仔细思考一下~", // AI 提示玩家重新思考
+        });
+      }
+    }
+  } catch (err) {
+    console.error("流式AI出错:", err);
+  } finally {
+    loadingAnswer.value = false;
+    playerAnswer.value = ""; // 清空玩家输入框
+    nextTick(() => {
+      const chatBox = document.querySelector(".chat-box");
+      chatBox.scrollTop = chatBox.scrollHeight; // 自动滚动到底部
+    });
+  }
+};
+
+// 提问下一个问题
+const askQuestion = () => {
+  const currentQuestion = questions.value[currentReasoningIndex.value];
+  chatHistory.value.push({
+    type: "ai",
+    content: currentQuestion.question,
+  });
+};
+
+// 处理搜索阶段
+const handleSearchPhase = async () => {
+  if (remainingQuestions.value > 0) {
+    const response = getSearchResponse(playerAnswer.value);
+    chatHistory.value.push({ type: "ai", content: response });
+    remainingQuestions.value--;
+  } else {
+    chatHistory.value.push({ type: "ai", content: "没有更多问题可以提问了。" });
+  }
+};
+
+// 获取搜索回答
+const getSearchResponse = (question) => {
+  return "AI助手给出搜索阶段的答案。";
+};
+
+// 跳转到显示完整案情阶段
+const goToRevealStage = () => {
+  router.push("/game-reveal-stage");
+};
+
+const goToNextStage = () => {
+  // 检查是否已经是最后一章
+  if (chapterId >= totalChapters.value - 1) {
+    goToRevealStage(); // 跳转到真相揭示页面
+  } else {
+    router.push("/game-search-stage/" + (chapterId + 1)); // 跳转到下一章
+  }
+};
+// 定义 startReasoning 方法
+const startReasoning = () => {
+  gamePhase.value = "reasoning";
+  if (visitedPhases.value.search === true) {
+    allvisted.value = true;
+  }
+  chatHistory.value.push({
+    type: "ai",
+    content: "开始推理阶段，现在请回答以下问题：",
+  });
+
+  // 提问第一个问题
+  setTimeout(() => {
+    askQuestion();
+  }, 10);
+};
+
+// 初始化
+onMounted(() => {
+  chatHistory.value.push({
+    type: "ai",
+    content: "案件初始化中，准备进行调查。",
+  });
+  gameStarted.value = false;
+  gamePhase.value = "init";
+});
 </script>
 
 <style scoped>
@@ -417,7 +397,7 @@ export default {
   justify-content: space-between;
   color: #00d0ff;
   font-size: 12px;
-  font-family: 'Monaco', monospace;
+  font-family: "Monaco", monospace;
 }
 
 .connection::before {
@@ -449,10 +429,20 @@ export default {
   gap: 12px;
 }
 
+/* AI消息保持左对齐 */
+.message.ai {
+  justify-content: flex-start;
+}
+
+/* 玩家消息右对齐 */
+.message.player {
+  justify-content: flex-end;
+}
+
 /* 玩家消息样式 */
 .chat-message.player {
   flex-direction: row-reverse;
-  justify-content: flex-end;  /* 靠右对齐 */
+  justify-content: flex-end; /* 靠右对齐 */
 }
 
 /* 头像样式 */
@@ -461,7 +451,7 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 48px;  /* 固定头像容器宽度 */
+  width: 48px; /* 固定头像容器宽度 */
 }
 
 .avatar img {
@@ -484,7 +474,7 @@ export default {
   padding: 12px;
   border-radius: 10px;
   color: #fff;
-  max-width: calc(100% - 80px);  /* 减去头像和间距的宽度 */
+  max-width: calc(100% - 80px); /* 减去头像和间距的宽度 */
   word-break: break-word;
 }
 
@@ -514,7 +504,7 @@ textarea {
   border-radius: 8px;
   padding: 12px;
   resize: vertical;
-  font-family: 'Monaco', monospace;
+  font-family: "Monaco", monospace;
 }
 
 textarea:focus {
@@ -576,9 +566,15 @@ textarea:focus {
 }
 
 @keyframes blink {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 .initial-buttons {
@@ -605,7 +601,6 @@ textarea:focus {
   display: inline-block;
   transition: all 0.3s ease;
 }
-
 
 .phase-btn:disabled {
   opacity: 0.5;

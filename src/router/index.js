@@ -30,7 +30,7 @@ const router = createRouter({
       component: () => import('../views/GameSearchStageView.vue'),
     },
     {
-      path: '/game-reasoning-stage',
+      path: '/game-reasoning-stage/:chapterIndex',
       name: 'game-reasoning-stage',
       component: () => import('../views/GameReasoningStageView.vue'),
     },

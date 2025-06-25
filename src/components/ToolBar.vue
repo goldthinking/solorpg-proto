@@ -298,33 +298,66 @@ const closeImagePreview = () => {
 
 .clue-container {
   display: flex;
-  gap: 20px; /* 控制左右间距 */
-  height: 80vh; /* 根据需要设置容器高度 */
+  flex-direction: column; /* 改为纵向布局 */
+  height: 80vh;
+  width: 100%;
 }
 
 .clue-thumbnails {
   display: flex;
-  flex-direction: column; /* 纵向排列 */
-  gap: 10px; /* 缩略图间距 */
-  overflow-y: auto; /* 添加垂直滚动条 */
-  width: 100px; /* 左侧列宽度 */
+  flex-direction: row; /* 横向排列 */
+  flex-wrap: wrap; /* 允许换行 */
+  gap: 10px;
+  overflow-y: auto; /* 保持垂直滚动 */
   padding: 10px;
-  background: rgba(245, 245, 245, 0); /* 可选背景色 */
+  background: rgba(245, 245, 245, 0.1);
+  align-content: flex-start; /* 顶部对齐 */
+}
+
+/* 保持原有的滚动条样式 */
+.clue-thumbnails::-webkit-scrollbar {
+  width: 6px;
+}
+
+.clue-thumbnails::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.clue-thumbnails::-webkit-scrollbar-thumb {
+  background-color: #776ad8;
+  border-radius: 3px;
 }
 
 .clue-item {
   cursor: pointer;
   transition: transform 0.2s;
-  width: 100px; /* 固定缩略图宽度 */
-  height: 100px; /* 固定缩略图高度 */
-  padding: 10px;
+  width: 100px;
+  height: 100px;
+  padding: 5px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
 }
 
+/* 保持原有的图片和交互样式 */
 .clue-item img {
-  width: 80%;
-  height: auto;
-  object-fit: contain;  /* 保持图片比例 */
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
   border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.clue-item:hover img {
+  border-color: rgba(119, 106, 216, 0.5);
+}
+
+.clue-item.active img {
+  border-color: #776ad8;
+  box-shadow: 0 0 10px rgba(119, 106, 216, 0.5);
 }
 
 .clue-item.active img { /* 选中状态 */

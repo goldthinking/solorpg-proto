@@ -137,7 +137,7 @@ const scriptDataStore = useScriptDataStore();
 const scriptData = scriptDataStore.scriptData; // 获取完整的 scriptData
 
 // 获取章节ID（从路由参数获取 chapterId）
-const chapterId = route.params.chapterId ? parseInt(route.params.chapterId) : 0;
+const chapterId = route.params.chapterIndex;
 
 // 通过章节ID从 scriptData 中解析出对应的章节数据
 const scriptChapter = computed(() => {
@@ -178,6 +178,7 @@ const showCharacterDialog = (character) => {
 
 // Method: 关闭对话框
 const closeDialog = () => {
+  chatHistory.value = [];
   // 如果有线索，点击后根据 remaining 数量来控制是否继续展示下一条线索
   if (currentClueButton.value && currentClueButton.value.remaining > 0) {
     currentClueIndex.value++;
@@ -199,7 +200,7 @@ const closeDialog = () => {
 
 // Method: 进入推理阶段
 const goToReasoningStage = () => {
-  router.push('/game-reasoning-stage');
+  router.push('/game-reasoning-stage/' + chapterId);
 };
 
 // Method: 展示线索对话框
@@ -313,7 +314,9 @@ const drag = (e) => {
 // 结束拖动
 const endDrag = () => {
   isDragging.value = false;
-  mapContent.value.style.cursor = 'grab';
+  if (mapContent.value) {
+    mapContent.value.style.cursor = 'grab';
+  }
 };
 
 const openImagePreview = (imageUrl) => {
@@ -346,8 +349,8 @@ const startStreaming = async () => {
   const promptPayload = {
     prompt: 1,
     characterName: currentCharacter.value?.name || '',
-    scripts: JSON.stringify(scriptData),
-    truth: scriptData?.reveal?.content || '',
+    scripts: JSON.stringify(scriptData?.chapters[chapterId] || []),
+    truth: scriptData?.chapters[chapterId].truth || '',
     question,
   };
 

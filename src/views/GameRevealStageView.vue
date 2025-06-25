@@ -30,52 +30,68 @@
           <span class="metric-value">{{ averageAttempts }}</span>
         </div>
         <div class="metric-item">
-          <label>总用时排名</label>
-          <span class="metric-value">{{ timeRank }}</span>
+          <label>答题平均分</label>
+          <span class="metric-value">{{ averageMaxScore }}</span>
         </div>
         <div class="metric-item">
           <label>问答精准度</label>
-          <span class="metric-value">{{ accuracy }}/5</span>
+          <span class="metric-value">{{ accuracy*100 }}%</span>
         </div>
       </div>
     </section>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, toRaw } from 'vue';
+import { useScriptDataStore } from '@/stores/scriptDataStore'; // 引入Pinia store
 import StageHeader from "@/components/StageHeader.vue";
-export default {
-  name: 'GameRevealStageView',
-  components: {
-    StageHeader
-  },
-  data() {
-    return {
-      scoreGrade: 'S',
-      averageAttempts: 2.8,
-      timeRank: 'TOP 10%',
-      accuracy: 4.2,
-      truthSections: [
-        {
-          icon: '🔍',
-          title: '案件背景',
-          content: '2023年7月15日凌晨，著名企业家王先生被发现死于自家书房。现场呈现密室状态，监控显示最后进入者为李小姐。死者留有疑似遗书，但笔迹鉴定存在疑点。'
-        },
-        {
-          icon: '🕵️',
-          title: '关键线索',
-          content: '1. 书房暗门指纹匹配李小姐\n2. 定时装置残留纤维与李小姐外套一致\n3. 伪造遗书的墨水生产日期在案发后'
-        },
-        {
-          icon: '✅',
-          title: '最终结论',
-          content: '李小姐利用职务之便设置延时机关，通过伪造遗书制造自杀假象。关键证据链完整，包含指纹、纤维物证及墨水鉴定结果。'
-        }
-      ]
-    }
-  }
-}
+import { useGameSessionStore } from "@/stores/gameSessionStore";
+
+const scriptDataStore = useScriptDataStore();
+const scriptData = scriptDataStore.scriptData; // 获取完整的 scriptData
+
+// 使用ref替代data中的变量
+const scoreGrade = ref('');
+const timeRank = ref('TOP 10%');
+const truthSections = ref([]);
+
+truthSections.value[0] = scriptData.reveal;
+
+const gameSessionStore = useGameSessionStore();
+
+// 计算 questionAnswersCount 的平均次数
+const averageAttempts = computed(() => {
+  const totalQuestions = Object.keys(gameSessionStore.questionAnswersCount).length; // 获取问题总数
+  const totalAnswers = Object.values(gameSessionStore.questionAnswersCount).reduce((sum, questionData) => sum + questionData.count, 0); // 获取总回答次数
+  console.log(totalAnswers)
+  
+  // 计算平均值
+  return totalQuestions > 0 ? totalAnswers / totalQuestions : 0;
+});
+
+const accuracy = computed(() => {
+  return gameSessionStore.questionCorrectAskCount / gameSessionStore.questionAskCount;
+})
+
+const averageMaxScore = computed(() => {
+  const totalQuestions = Object.keys(gameSessionStore.questionAnswersCount).length; // 获取问题总数
+  const totalMaxScores = Object.values(gameSessionStore.questionAnswersCount).reduce(
+    (sum, questionData) => sum + questionData.score,
+    0
+  );
+
+  // 计算平均分数
+  return totalQuestions > 0 ? totalMaxScores / totalQuestions : 0;
+});
+
+console.log(averageMaxScore.value);
+console.log(averageAttempts.value);
+console.log(accuracy.value);
+
+
 </script>
+
 
 <style scoped>
 .game-reveal-stage-view {
