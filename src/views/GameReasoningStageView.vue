@@ -249,6 +249,7 @@ const submitAnswer = async () => {
       promptPayload,
       (chunk) => {
         streamingAnswer.value += chunk;
+        console.log(streamingAnswer.value);
       },
       (finalResult) => {
         // 4. AI 返回的完整回答，推送到聊天记录

@@ -57,6 +57,7 @@
   import { useRoute, useRouter } from 'vue-router'
   import { useScriptDataStore } from '@/stores/scriptDataStore'
   import { useGameSessionStore } from '@/stores/gameSessionStore'
+  import { useClueStore } from '@/stores/clueStore'
 
   const script = ref(null)
   const scriptDTO = ref(null)
@@ -70,7 +71,10 @@
   const scriptId = route.params.scriptId  // 从路由参数获取 scriptId
   const scriptDataStore = useScriptDataStore(); 
   const gameSessionStore = useGameSessionStore();
+  const clueStore = useClueStore();
   gameSessionStore.$reset();
+  clueStore.clearClues();
+
 
   if (scriptId) {
     fetchScriptDetails(scriptId)
