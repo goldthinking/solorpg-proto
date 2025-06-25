@@ -85,7 +85,7 @@ const averageMaxScore = computed(() => {
   return totalQuestions > 0 ? totalMaxScores / totalQuestions : 0;
 });
 
-scoreGrade.value = getInferenceScoreGrade(averageAttempts, averageMaxScore, accuracy);
+scoreGrade.value = getInferenceScoreGrade(averageAttempts.value, averageMaxScore.value, accuracy.value);
 
 console.log(averageMaxScore.value);
 console.log(averageAttempts.value);
