@@ -104,7 +104,7 @@
 
     <!-- 查看完整案情按钮 -->
     <button v-if="allvisted" class="next-stage-btn" @click="goToNextStage">
-      查看完整案情
+      进入下一阶段
     </button>
   </div>
 </template>
