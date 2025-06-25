@@ -85,10 +85,58 @@ const averageMaxScore = computed(() => {
   return totalQuestions > 0 ? totalMaxScores / totalQuestions : 0;
 });
 
+scoreGrade.value = getInferenceScoreGrade(averageAttempts, averageMaxScore, accuracy);
+
 console.log(averageMaxScore.value);
 console.log(averageAttempts.value);
 console.log(accuracy.value);
 
+function getInferenceScoreGrade(averageAttempts, averageMaxScore, accuracy) {
+  let score = 0;
+
+  // 评分标准
+  // 答题平均分：最高分数越高，表现越好
+  if (averageMaxScore >= 8) {
+    score += 30;
+  } else if (averageMaxScore >= 6) {
+    score += 20;
+  } else {
+    score += 10;
+  }
+
+  // 问答精准度：越高，分数越高
+  if (accuracy >= 0.9) {
+    score += 30;
+  } else if (accuracy >= 0.8) {
+    score += 20;
+  } else {
+    score += 10;
+  }
+
+  // 平均答题次数：合理的答题次数加分
+  if (averageAttempts <= 3) {
+    score += 20;  // 答题次数适中，表现较好
+  } else if (averageAttempts <= 5) {
+    score += 10;  // 答题次数偏多，表现一般
+  } else {
+    score += 5;   // 答题次数过多，表现较差
+  }
+
+  // 综合评定等级
+  if (score >= 75) {
+    return 'S'; // 优秀
+  } else if (score >= 60) {
+    return 'A'; // 良好
+  } else if (score >= 45) {
+    return 'B'; // 中等
+  } else if (score >= 30) {
+    return 'C'; // 及格
+  } else if (score >= 15) {
+    return 'D'; // 差
+  } else {
+    return 'E'; // 不及格
+  }
+}
 
 </script>
 
